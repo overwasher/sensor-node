@@ -1,5 +1,7 @@
-# Hello World Example
+##### [Overwatcher code](https://github.com/overwasher/overwatcher) | [Sensor Node code](https://github.com/overwasher/esp-firmware) | [Telegram bot code](https://github.com/overwasher/telegram-bot) | [Task Tracker](https://taiga.dcnick3.me/project/overwasher/)
 
-Starts a FreeRTOS task to print "Hello World"
+# esp-firmware
 
-See the README.md file in the upper level 'examples' directory for more information about examples.
+Project that allows users to find most convenient washing machine to use in the Innopolis dorms.
+
+This component gathers telemetry from accelerometer, decides whether washing machine is active and sends this information to [Overwatcher](https://github.com/overwasher/overwatcher)
