@@ -1,0 +1,2 @@
+Commit f532d6a554dc2f2daa3954b597072ecb48354688
+From https://github.com/gabrielbvicari/esp32-i2c_rw
