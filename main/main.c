@@ -16,7 +16,9 @@
 #include "freertos/semphr.h"
 #include "esp_sleep.h"
 #include "esp_pm.h"
+
 #include "wifi_manager.h"
+#include "accelerometer.h"
 
 
 static const char* TAG = "main";
@@ -94,7 +96,7 @@ void app_main(){
 	ESP_ERROR_CHECK(esp_pm_configure(&pm_conf) );
 	ESP_ERROR_CHECK(esp_sleep_enable_timer_wakeup(20*1e6) );
 	wifi_init();
-
+	accelerometer_init();
 	xTaskCreate(show_memory, "show_memory", configMINIMAL_STACK_SIZE * 5, NULL, 5, NULL);
 
 	while (1){
@@ -103,7 +105,7 @@ void app_main(){
 			send_request();
 			stop_communication();
 		};
-		ESP_ERROR_CHECK(esp_light_sleep_start() );
+		// ESP_ERROR_CHECK(esp_light_sleep_start() );
 	}
 
 }

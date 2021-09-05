@@ -1,2 +1,2 @@
-idf_component_register(SRCS "hello_world_main.c" "wifi_manager.c"
+idf_component_register(SRCS "main.c" "wifi_manager.c" "accelerometer.c"
                     INCLUDE_DIRS "include")

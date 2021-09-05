@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "mpu6050_registers.h": "c",
+        "mpu6050.h": "c",
+        "esp32_i2c_rw.h": "c",
+        "task.h": "c"
+    }
+}
