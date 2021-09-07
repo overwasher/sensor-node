@@ -38,7 +38,7 @@ int8_t esp32_i2c_read_bytes
 (
     uint8_t device_address,
     uint8_t register_address,
-    uint8_t size,
+    size_t size,
     uint8_t* data
 );
 

@@ -37,9 +37,6 @@ typedef struct _mpu6050_rotation_t
     int16_t gyro_z;
 } mpu6050_rotation_t;
 
-uint8_t mpu6050_device_address;
-uint8_t buffer[14];
-
 /**
  * @brief MPU6050 constructor.
  */
@@ -2179,7 +2176,7 @@ uint16_t mpu6050_get_fifo_count();
  * @return Byte from FIFO buffer.
  */
 uint8_t mpu6050_get_fifo_byte();
-void mpu6050_get_fifo_bytes(uint8_t *data, uint8_t length);
+void mpu6050_get_fifo_bytes(uint8_t *data, size_t length);
 
 
 /**

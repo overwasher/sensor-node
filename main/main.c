@@ -86,6 +86,7 @@ void app_main(){
 
     ESP_ERROR_CHECK(esp_event_loop_create_default());
 
+	ESP_ERROR_CHECK( gpio_install_isr_service(0) );
 
 	esp_pm_config_esp32_t pm_conf = {
 		.max_freq_mhz = 80,

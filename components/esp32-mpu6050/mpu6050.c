@@ -22,11 +22,12 @@ const char *TAG_MPU6050 = "MPU6050";
 #define BETA            (sqrt(3.0f / 4.0f) * GYRO_MEAS_ERROR)
 #define ZETA            (sqrt(3.0f / 4.0f) * GYRO_MEAS_DRIFT)
 
-float quart[4] = {1.0f, 0.0f, 0.0f, 0.0f};
-float delta_t = 0.0f;
-float pitch, yaw, roll;
-int last_update = 0, first_update = 0, now = 0;
 
+static uint8_t mpu6050_device_address;
+static uint8_t buffer[14];
+
+static float quart[4] = {1.0f, 0.0f, 0.0f, 0.0f};
+static float delta_t = 0.0f;
 void mpu6050_init()
 {
     mpu6050_device_address = MPU6050_DEVICE;
@@ -2594,7 +2595,7 @@ uint8_t mpu6050_get_fifo_byte()
     return (buffer[0]);
 }
 
-void mpu6050_get_fifo_bytes(uint8_t *data, uint8_t length)
+void mpu6050_get_fifo_bytes(uint8_t *data, size_t length)
 {
     if (length > 0) {
         esp32_i2c_read_bytes

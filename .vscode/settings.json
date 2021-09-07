@@ -3,6 +3,11 @@
         "mpu6050_registers.h": "c",
         "mpu6050.h": "c",
         "esp32_i2c_rw.h": "c",
-        "task.h": "c"
+        "task.h": "c",
+        "i2c.h": "c",
+        "esp_err.h": "c",
+        "freertos.h": "c",
+        "esp_log.h": "c",
+        "endian.h": "c"
     }
 }
