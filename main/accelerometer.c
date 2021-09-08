@@ -7,6 +7,11 @@
 #include "esp_log.h"
 #include "driver/i2c.h"
 #include "endian.h"
+#include "esp_timer.h"
+
+#include "ow_events.h"
+#include "activity_detection.h"
+#include "accelerometer.h"
 
 static const char* TAG = "accel";
 
@@ -16,10 +21,6 @@ static const char* TAG = "accel";
 
 #define MPU6050_WIP_IO 13
 #define MPU6050_INT_IO 14
-
-typedef struct{
-    int16_t x, y, z;
-} mpu6050_frame_t;
 
 static uint8_t buffer[1024];
 
@@ -35,7 +36,6 @@ static void IRAM_ATTR mpu_isr_handler(void* arg)
     vTaskNotifyGiveFromISR(accel_handle, &xHigherPriorityTaskWoken);
     portYIELD_FROM_ISR( xHigherPriorityTaskWoken );
 }
-
 
 static void accel_task_function(void* args){
     mpu6050_init();
@@ -104,6 +104,14 @@ static void accel_task_function(void* args){
         }
         
         gpio_set_level(MPU6050_WIP_IO, 0);
+
+        accel_buffer_dto_t accel_buffer_dto = {
+            .timestamp = esp_timer_get_time(),
+            .buffer = ptr,
+            .buffer_count = number_of_frames
+        };
+        esp_event_post_to(ad_event_loop, OW_EVENT, OW_EVENT_ON_ACCEL_BUFFER, &accel_buffer_dto, sizeof(accel_buffer_dto), 0);
+
         // mpu6050_get_acceleration(&accel);
         // ESP_LOGI(TAG, "x: %d, y: %d, z: %d", map_to_mg(accel.accel_x), map_to_mg(accel.accel_y), map_to_mg(accel.accel_z));
         // vTaskDelay( pdMS_TO_TICKS(20) );

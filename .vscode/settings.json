@@ -8,6 +8,10 @@
         "esp_err.h": "c",
         "freertos.h": "c",
         "esp_log.h": "c",
-        "endian.h": "c"
+        "endian.h": "c",
+        "esp_event.h": "c",
+        "esp_event_base.h": "c",
+        "ow_events.h": "c",
+        "esp_pm.h": "c"
     }
 }

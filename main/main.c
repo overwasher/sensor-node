@@ -19,6 +19,7 @@
 
 #include "wifi_manager.h"
 #include "accelerometer.h"
+#include "activity_detection.h"
 
 
 static const char* TAG = "main";
@@ -98,6 +99,7 @@ void app_main(){
 	ESP_ERROR_CHECK(esp_sleep_enable_timer_wakeup(20*1e6) );
 	wifi_init();
 	accelerometer_init();
+	activity_detection_init();
 	xTaskCreate(show_memory, "show_memory", configMINIMAL_STACK_SIZE * 5, NULL, 5, NULL);
 
 	while (1){
