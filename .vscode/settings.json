@@ -12,6 +12,10 @@
         "esp_event.h": "c",
         "esp_event_base.h": "c",
         "ow_events.h": "c",
-        "esp_pm.h": "c"
+        "esp_pm.h": "c",
+        "esp_timer.h": "c",
+        "wifi_manager.h": "c",
+        "string.h": "c",
+        "esp_http_client.h": "c"
     }
 }

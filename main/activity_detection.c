@@ -1,10 +1,12 @@
 #include "esp_log.h"
+#include "math.h"
 
 #include "ow_events.h"
 #include "esp_err.h"
 #include "activity_detection.h"
 #include "accelerometer.h"
-#include "math.h"
+#include "overwatcher_communicator.h"
+
 
 static const char* TAG = "ad";
 
@@ -21,13 +23,15 @@ static void on_got_buffer(void* arg, esp_event_base_t event_base, int32_t event_
     }
     ans /= typed_event_data->buffer_count;
     ESP_LOGI(TAG, "average magnitude of acceleration is %lld mg", (long long) ans);
+    bool status = ans > 1500 ? true : false;
+    send_raw_update(ans, status);
 }
 
 void activity_detection_init(){
     esp_event_loop_args_t loop_args = {
         .queue_size = CONFIG_ESP_SYSTEM_EVENT_QUEUE_SIZE,
         .task_name = "ad_evt",
-        .task_stack_size = ESP_TASKD_EVENT_STACK,
+        .task_stack_size = 5*configMINIMAL_STACK_SIZE,
         .task_priority = ESP_TASKD_EVENT_PRIO,
         .task_core_id = 0
     };

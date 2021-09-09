@@ -88,8 +88,10 @@ static void accel_task_function(void* args){
 
     mpu6050_acceleration_t accel;
     while(1){
-        ulTaskNotifyTake(pdFALSE, pdMS_TO_TICKS(10000));
-        // TODO: if timeout then crash
+        if (ulTaskNotifyTake(pdFALSE, pdMS_TO_TICKS(10000)) == 0){  //if ulTaskNotifyGive took place, then it would be 1
+            ESP_LOGI(TAG, "Interrupt on full buffer did not arrive");
+            abort();
+        }
         // TODO: check buffer size
         gpio_set_level(MPU6050_WIP_IO, 1);
         mpu6050_get_int_status();
