@@ -112,13 +112,16 @@ static void accel_task_function(void* args){
             .buffer = ptr,
             .buffer_count = number_of_frames
         };
-        esp_event_post_to(ad_event_loop, OW_EVENT, OW_EVENT_ON_ACCEL_BUFFER, &accel_buffer_dto, sizeof(accel_buffer_dto), 0);
+        esp_event_post_to(accel_event_loop, OW_EVENT, OW_EVENT_ON_ACCEL_BUFFER, &accel_buffer_dto, sizeof(accel_buffer_dto), 0);
 
         // mpu6050_get_acceleration(&accel);
         // ESP_LOGI(TAG, "x: %d, y: %d, z: %d", map_to_mg(accel.accel_x), map_to_mg(accel.accel_y), map_to_mg(accel.accel_z));
         // vTaskDelay( pdMS_TO_TICKS(20) );
     }
 }
+
+
+esp_event_loop_handle_t accel_event_loop;
 
 void accelerometer_init(){
     i2c_config_t conf = {
@@ -132,6 +135,14 @@ void accelerometer_init(){
     };
     ESP_ERROR_CHECK(i2c_param_config(I2C_NUM_0, &conf));
     ESP_ERROR_CHECK(i2c_driver_install(I2C_NUM_0, I2C_MODE_MASTER, 0, 0, 0));
+    esp_event_loop_args_t loop_args = {
+        .queue_size = CONFIG_ESP_SYSTEM_EVENT_QUEUE_SIZE,
+        .task_name = "ad_evt",
+        .task_stack_size = 5*configMINIMAL_STACK_SIZE,
+        .task_priority = ESP_TASKD_EVENT_PRIO,
+        .task_core_id = 0
+    };
+    ESP_ERROR_CHECK(esp_event_loop_create(&loop_args, &accel_event_loop));
 
     xTaskCreate(accel_task_function, "accel_task", 5*configMINIMAL_STACK_SIZE, NULL, 7, &accel_handle);
 }

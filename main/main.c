@@ -20,6 +20,7 @@
 #include "accelerometer.h"
 #include "activity_detection.h"
 #include "overwatcher_communicator.h"
+#include "telemetry.h"
 
 
 static const char* TAG = "main";
@@ -56,6 +57,7 @@ void app_main(){
 			ESP_LOGI(TAG, "connected successfully");
 			accelerometer_init();
 			activity_detection_init();
+			telemetry_init();
 	}
 
 	/*

@@ -89,3 +89,8 @@ void send_raw_update(int64_t value, bool status){
 	}
 	esp_http_client_cleanup(client);
 }
+
+
+void send_telemetry(uint8_t* data, size_t size, size_t head, size_t tail){
+	ESP_LOGI(TAG, "stub for send_telemetry with pointer to data %p, size %zu, head %zu and tail %zu", data, size, head, tail);
+}

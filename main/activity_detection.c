@@ -10,8 +10,6 @@
 
 static const char* TAG = "ad";
 
-esp_event_loop_handle_t ad_event_loop;
-
 static void on_got_buffer(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data){
     accel_buffer_dto_t* typed_event_data = event_data;
     int64_t ans = 0;
@@ -28,13 +26,5 @@ static void on_got_buffer(void* arg, esp_event_base_t event_base, int32_t event_
 }
 
 void activity_detection_init(){
-    esp_event_loop_args_t loop_args = {
-        .queue_size = CONFIG_ESP_SYSTEM_EVENT_QUEUE_SIZE,
-        .task_name = "ad_evt",
-        .task_stack_size = 5*configMINIMAL_STACK_SIZE,
-        .task_priority = ESP_TASKD_EVENT_PRIO,
-        .task_core_id = 0
-    };
-    ESP_ERROR_CHECK(esp_event_loop_create(&loop_args, &ad_event_loop));
-    ESP_ERROR_CHECK(esp_event_handler_register_with(ad_event_loop, OW_EVENT, OW_EVENT_ON_ACCEL_BUFFER, &on_got_buffer, NULL));
+    ESP_ERROR_CHECK(esp_event_handler_register_with(accel_event_loop, OW_EVENT, OW_EVENT_ON_ACCEL_BUFFER, &on_got_buffer, NULL));
 }
