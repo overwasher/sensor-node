@@ -15,6 +15,7 @@
 #include "freertos/semphr.h"
 #include "esp_sleep.h"
 #include "esp_pm.h"
+#include "esp_sntp.h"
 
 #include "wifi_manager.h"
 #include "accelerometer.h"
@@ -33,9 +34,19 @@ static void show_memory(void* pvParameters){
 	}
 }
 
+static void initialize_sntp(void)
+{
+    ESP_LOGI(TAG, "Initializing SNTP");
+    sntp_setoperatingmode(SNTP_OPMODE_POLL);
+    sntp_setservername(0, "pool.ntp.org");
+    sntp_set_sync_mode(SNTP_SYNC_MODE_SMOOTH);
+    sntp_init();
+}
+
 void app_main(){
 	nvs_flash_init();
     ESP_ERROR_CHECK(esp_netif_init());
+	
 
     ESP_ERROR_CHECK(esp_event_loop_create_default());
 
@@ -55,6 +66,11 @@ void app_main(){
 	
 	if (start_communication() == ESP_OK){
 			ESP_LOGI(TAG, "connected successfully");
+			initialize_sntp();
+			while (sntp_get_sync_status() == SNTP_SYNC_STATUS_RESET) {
+				ESP_LOGI(TAG, "Waiting for system time to be set...");
+				vTaskDelay(2000 / portTICK_PERIOD_MS);
+			}
 			accelerometer_init();
 			activity_detection_init();
 			telemetry_init();
@@ -64,7 +80,7 @@ void app_main(){
 	while (1){
 		if (start_communication() == ESP_OK){
 			ESP_LOGI(TAG, "connected successfully");
-			send_raw_update();
+			send_status();
 			stop_communication();
 		};
 		// ESP_ERROR_CHECK(esp_light_sleep_start() );

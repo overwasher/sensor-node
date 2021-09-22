@@ -22,7 +22,7 @@ static void on_got_buffer(void* arg, esp_event_base_t event_base, int32_t event_
     ans /= typed_event_data->buffer_count;
     ESP_LOGI(TAG, "average magnitude of acceleration is %lld mg", (long long) ans);
     bool status = ans > 1500 ? true : false;
-    // send_raw_update(ans, status);
+    // send_status(ans, status);
 }
 
 void activity_detection_init(){
