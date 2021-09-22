@@ -18,6 +18,9 @@
         "string.h": "c",
         "esp_http_client.h": "c",
         "telemetry.h": "c",
-        "accelerometer.h": "c"
+        "accelerometer.h": "c",
+        "array": "c",
+        "string": "c",
+        "string_view": "c"
     }
 }

@@ -15,8 +15,8 @@
 
 static const char* TAG = "accel";
 
-#define MPU6050_SDA_IO 4
-#define MPU6050_SCL_IO 5
+#define MPU6050_SDA_IO 26//4
+#define MPU6050_SCL_IO 25//2// 0//5
 #define MPU6050_FREQ_HZ 4e5
 
 #define MPU6050_WIP_IO 13
@@ -112,7 +112,7 @@ static void accel_task_function(void* args){
             .buffer = ptr,
             .buffer_count = number_of_frames
         };
-        esp_event_post_to(accel_event_loop, OW_EVENT, OW_EVENT_ON_ACCEL_BUFFER, &accel_buffer_dto, sizeof(accel_buffer_dto), 0);
+        ESP_ERROR_CHECK(esp_event_post_to(accel_event_loop, OW_EVENT, OW_EVENT_ON_ACCEL_BUFFER, &accel_buffer_dto, sizeof(accel_buffer_dto), 0));
 
         // mpu6050_get_acceleration(&accel);
         // ESP_LOGI(TAG, "x: %d, y: %d, z: %d", map_to_mg(accel.accel_x), map_to_mg(accel.accel_y), map_to_mg(accel.accel_z));
