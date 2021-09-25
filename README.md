@@ -30,8 +30,8 @@ Sensor-node software comes as several modules with particular responsibilities:
 
 ## How to build & flash
 
-VScode provides a nice plugin to work with `esp-idf`: so, install it, clone repo, and build project with `Ctrl+E, B`.
-On order to flash it to chip, make sure that this software is compatible with it... Vast amount of nuances that embedded programming comes with does not allow for a general recipe. 
+VScode provides a [nice plugin](https://github.com/espressif/vscode-esp-idf-extension) to work with `esp-idf`: so, install it, clone repo, and build project with `Ctrl+E, B`.
+At a later point, we will finalize hardware design files ready and publishing them.
 
 ## How to contribute
 
