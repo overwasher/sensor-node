@@ -21,7 +21,7 @@ Note that sensor-node component is **not** written in the object-oriented paradi
 
 ## Architecture
 Sensor-node software comes as several modules with particular responsibilities:
-- `Accelerometer`: initializes I2C and MPU6050. Upon filling buffer of accelerometer system, ESP32 receives interrupt and reads acceletation data
+- `Accelerometer`: initializes I2C and MPU6050. Upon filling buffer of MPU6050, ESP32 receives interrupt and reads acceletation data
 - `Activity detection`: upon receiving buffer with telemetry, decides whether status of the washing machine has changed, and if it was the case, signals `Overwatcher Communicator` to send corresponding update to the server
 - `Overwatcher Communicator` establishes an https connection with the server and provides functionality for sending status update and raw telemetry data
 - `Telemetry`: upon receiving buffer (in parallel with `Activity detection`), stores buffer to the flash memory. When flash memory becomes almost full, it signals `Overwatcher Communicator` to send raw telemetry.
