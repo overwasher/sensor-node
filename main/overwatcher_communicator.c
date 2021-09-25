@@ -9,10 +9,10 @@
 #include <string.h>
 
 #include "overwatcher_communicator.h"
+#include "credentials.h"
 
-#define BASEURL "http://192.168.43.18:5000/"
-// #define BASEURL "https://overwatcher.ow.dcnick3.me/";
-#define AUTH_TOKEN "Bearer /innopolis/dorms/1/levels/3/washers/2"
+// #define BASEURL "http://192.168.43.18:5000/"
+#define BASEURL "https://overwatcher.ow.dcnick3.me/"
 
 extern const char overwatcher_ow_dcnick3_me_pem_start[] asm("_binary_overwatcher_ow_dcnick3_me_pem_start");
 extern const char overwatcher_ow_dcnick3_me_pem_end[]   asm("_binary_overwatcher_ow_dcnick3_me_pem_end");
@@ -118,12 +118,14 @@ static telemetry_parcel_header_t fill_parcel_header(void){
 
 void send_telemetry(uint8_t* data, size_t size, size_t head, size_t tail){
 	telemetry_parcel_header_t telemetry_parcel_header = fill_parcel_header();
+	ESP_LOGI(TAG, "size of parcel header is %zu", sizeof(telemetry_parcel_header));
 	ESP_LOGI(TAG, "stub for send_telemetry with pointer to data %p, size %zu, head %zu and tail %zu", data, size, head, tail);
 	esp_http_client_config_t config = {
 	   .url = BASEURL "sensor/v1/telemetry",
 	   .event_handler = _http_event_handle,
        .cert_pem = overwatcher_ow_dcnick3_me_pem_start,
        .method = HTTP_METHOD_POST,
+	   .buffer_size_tx = 1024,
 	};
 	esp_http_client_handle_t client = esp_http_client_init(&config);
 	
@@ -131,7 +133,11 @@ void send_telemetry(uint8_t* data, size_t size, size_t head, size_t tail){
     esp_http_client_set_header(client, "Content-Type", "application/octet-stream");
 
 	size_t parcel_len = (tail - head + size) % size + sizeof(telemetry_parcel_header);
-	ESP_ERROR_CHECK(esp_http_client_open(client, parcel_len));
+	if (esp_http_client_open(client, parcel_len) != ESP_OK){
+		ESP_LOGE(TAG, "Failed to connect to server");
+		esp_http_client_cleanup(client);
+		return;
+	}
 	
 	if (esp_http_client_write(client, (char*) &telemetry_parcel_header, sizeof(telemetry_parcel_header)) != sizeof(telemetry_parcel_header)){
 		ESP_LOGE(TAG, "Writing header failed");
@@ -141,8 +147,8 @@ void send_telemetry(uint8_t* data, size_t size, size_t head, size_t tail){
 	// head-to-tail, or
 	// head-to-end and beginning-to-tail
 	if (tail > head 
-		? (esp_http_client_write(client, (char*) data, tail-head) != tail-head)
-		: (esp_http_client_write(client, (char*) data, size-head) != size-head
+		? (esp_http_client_write(client, (char*) data + head, tail-head) != tail-head)
+		: (esp_http_client_write(client, (char*) data + head, size-head) != size-head
 			|| esp_http_client_write(client, (char*) data, tail) != tail))
 	{
 		ESP_LOGE(TAG, "Writing measurements failed");

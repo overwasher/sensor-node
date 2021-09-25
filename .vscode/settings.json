@@ -22,6 +22,9 @@
         "array": "c",
         "string": "c",
         "string_view": "c",
-        "esp_app_format.h": "c"
+        "esp_app_format.h": "c",
+        "initializer_list": "c",
+        "utility": "c",
+        "overwatcher_communicator.h": "c"
     }
 }

@@ -60,6 +60,16 @@ static void sending_task_function(void* args){
         size_t local_tail = tail;
         send_telemetry(data, storage_info->size, head, local_tail);
         ESP_LOGI(TAG, "sent buffers and changes head from %zu to %zu", head, local_tail);
+        
+        //erasing flash:
+        if (local_tail > head){
+            esp_partition_erase_range(storage_info, head, local_tail-head);
+        }
+        else{
+            esp_partition_erase_range(storage_info, head, storage_info->size-head);
+            esp_partition_erase_range(storage_info, 0, local_tail);
+        }
+
         head = local_tail;
         spi_flash_munmap(storage_handle);
     }
@@ -79,10 +89,11 @@ void telemetry_init(void){
     
     NUMBER_OF_BUFFERS = storage_info -> size / BUFFER_ALIGNMENT;
     head = (esp_random() % NUMBER_OF_BUFFERS) * BUFFER_ALIGNMENT;
-    // tail = head;
-    tail = (head - 35*BUFFER_ALIGNMENT + storage_info -> size) % storage_info -> size;
+    tail = head;
+    // for test speed up purposes
+    // tail = (head - 35*BUFFER_ALIGNMENT + storage_info -> size) % storage_info -> size;
 
-    xTaskCreate(sending_task_function, "sending_task", 5*configMINIMAL_STACK_SIZE, NULL, 5, &sending_handle);
+    xTaskCreate(sending_task_function, "sending_task", 8*configMINIMAL_STACK_SIZE, NULL, 5, &sending_handle);
 
     ESP_ERROR_CHECK(esp_event_handler_register_with(accel_event_loop, OW_EVENT, OW_EVENT_ON_ACCEL_BUFFER, &on_got_buffer, NULL));
 }

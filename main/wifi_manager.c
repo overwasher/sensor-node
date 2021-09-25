@@ -6,9 +6,7 @@
 #include "freertos/event_groups.h"
 #include "esp_log.h"
 #include "wifi_manager.h"
-
-#define ESP_WIFI_SSID      "nirvana"
-#define ESP_WIFI_PASS      "nevermind"
+#include "credentials.h"
 
 static const char* TAG = "wifi";
 
@@ -118,13 +116,13 @@ esp_err_t start_communication(){
 }
 
 
-void stop_communication(){
+void stop_communication(void){
 	esp_wifi_stop();
     esp_pm_lock_release(pm_lock_handle);
 	ESP_LOGI(TAG, "Communication stopped");
 }
 
-void wifi_init(){
+void wifi_init(void){
     ESP_ERROR_CHECK( esp_pm_lock_create(ESP_PM_NO_LIGHT_SLEEP, 0, "communication", &pm_lock_handle) );
     esp_netif_create_default_wifi_sta();
     wifi_init_config_t init_config = WIFI_INIT_CONFIG_DEFAULT();
