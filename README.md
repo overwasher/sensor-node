@@ -25,7 +25,7 @@ Sensor-node software comes as several modules with particular responsibilities:
 - `Activity detection`: upon receiving buffer with telemetry, decides whether status of the washing machine has changed, and if it was the case, signals `Overwatcher Communicator` to send corresponding update to the server
 - `Overwatcher Communicator` establishes an https connection with the server and provides functionality for sending status update and raw telemetry data
 - `Telemetry`: upon receiving buffer (in parallel with `Activity detection`), stores buffer to the flash memory. When flash memory becomes almost full, it signals `Overwatcher Communicator` to send raw telemetry.
-- `Wi-Fi Manager` initializes wi-fi modules and provides realization of connecting and disconnecting to the Access Point, which `Overwatcher Communicator` relies on. In general, we want to turn off wi-fi when it is not needed, in order to enter light sleep phase, optimizing power consumption.
+- `Wi-Fi Manager` initializes wi-fi modules and provides implementation of connecting and disconnecting to the Access Point, which `Overwatcher Communicator` relies on. In general, we want to turn off wi-fi when it is not needed, in order to enter light sleep mode, optimizing power consumption.
 
 
 ## How to build & flash
