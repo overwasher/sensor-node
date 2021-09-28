@@ -58,10 +58,11 @@ void send_status(bool status){
 	   .event_handler = _http_event_handle,
        .cert_pem = overwatcher_ow_dcnick3_me_pem_start,
        .method = HTTP_METHOD_POST,
+	   .buffer_size_tx = 1024,
 	};
 	esp_http_client_handle_t client = esp_http_client_init(&config);
     
-    esp_http_client_set_header(client, "Authorization", "Bearer /innopolis/dorms/1/levels/3/washers/2");
+    esp_http_client_set_header(client, "Authorization", AUTH_TOKEN);
     esp_http_client_set_header(client, "Content-Type", "application/json");
 
     char json_status[30];
@@ -116,7 +117,7 @@ static telemetry_parcel_header_t fill_parcel_header(void){
 	return telemetry_parcel_header;
 }
 
-void send_telemetry(uint8_t* data, size_t size, size_t head, size_t tail){
+void send_telemetry(const uint8_t* data, size_t size, size_t head, size_t tail){
 	telemetry_parcel_header_t telemetry_parcel_header = fill_parcel_header();
 	ESP_LOGI(TAG, "size of parcel header is %zu", sizeof(telemetry_parcel_header));
 	ESP_LOGI(TAG, "stub for send_telemetry with pointer to data %p, size %zu, head %zu and tail %zu", data, size, head, tail);

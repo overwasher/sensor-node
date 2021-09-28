@@ -138,7 +138,7 @@ void accelerometer_init(){
     esp_event_loop_args_t loop_args = {
         .queue_size = CONFIG_ESP_SYSTEM_EVENT_QUEUE_SIZE,
         .task_name = "ad_evt",
-        .task_stack_size = 5*configMINIMAL_STACK_SIZE,
+        .task_stack_size = 8*configMINIMAL_STACK_SIZE,
         .task_priority = ESP_TASKD_EVENT_PRIO,
         .task_core_id = 0
     };
