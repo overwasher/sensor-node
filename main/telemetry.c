@@ -160,7 +160,7 @@ void telemetry_init(void){
     
     #endif
 
-    xTaskCreate(sending_task_function, "sending_task", 8*configMINIMAL_STACK_SIZE, NULL, 5, &sending_handle);
+    xTaskCreate(sending_task_function, "sending_tm_task", 8*configMINIMAL_STACK_SIZE, NULL, 5, &sending_handle);
 
     ESP_ERROR_CHECK(esp_event_handler_register_with(accel_event_loop, OW_EVENT, OW_EVENT_ON_ACCEL_BUFFER, &on_got_buffer, NULL));
 }
