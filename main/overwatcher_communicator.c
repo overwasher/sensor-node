@@ -127,12 +127,14 @@ static telemetry_parcel_header_t fill_parcel_header(void){
 }
 
 void send_telemetry(const uint8_t* data, size_t size, size_t head, size_t tail){
+	
+	telemetry_parcel_header_t telemetry_parcel_header = fill_parcel_header(); //fill header with time before attempting to start communication
+
 	if (start_communication() != ESP_OK){
 		ESP_LOGE(TAG, "could not start communication, therefore did not send telemetry");
 		return;
 	}
 
-	telemetry_parcel_header_t telemetry_parcel_header = fill_parcel_header();
 	ESP_LOGI(TAG, "size of parcel header is %zu", sizeof(telemetry_parcel_header));
 	ESP_LOGI(TAG, "stub for send_telemetry with pointer to data %p, size %zu, head %zu and tail %zu", data, size, head, tail);
 	esp_http_client_config_t config = {
