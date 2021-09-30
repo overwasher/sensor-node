@@ -85,16 +85,19 @@ static void accel_task_function(void* args){
     mpu6050_set_fifo_enabled(true);
     mpu6050_set_int_fifo_buffer_overflow_enabled(true);
     mpu6050_set_accel_fifo_enabled(true);
-
-    mpu6050_acceleration_t accel;
     while(1){
-        if (ulTaskNotifyTake(pdFALSE, pdMS_TO_TICKS(10000)) == 0){  //if ulTaskNotifyGive took place, then it would be 1
-            ESP_LOGI(TAG, "Interrupt on full buffer did not arrive");
+        if (ulTaskNotifyTake(pdFALSE, portMAX_DELAY) == 0){  //if ulTaskNotifyGive took place, then it would be 1
+            ESP_LOGE(TAG, "Interrupt on full buffer did not arrive");
             abort();
         }
-        // TODO: check buffer size
         gpio_set_level(MPU6050_WIP_IO, 1);
         mpu6050_get_int_status();
+
+        int actual_buffer_size = mpu6050_get_fifo_count();
+        if (actual_buffer_size != sizeof(buffer)) {
+            ESP_LOGE(TAG, "received interrupt and buffer size is %d, while expected budder size is %zu", actual_buffer_size, sizeof(buffer));
+            continue;
+        }
         mpu6050_get_fifo_bytes(buffer, sizeof(buffer));
         mpu6050_frame_t* ptr = (mpu6050_frame_t*)(buffer + sizeof(buffer) % sizeof(mpu6050_frame_t));
         size_t number_of_frames = sizeof(buffer) / sizeof(mpu6050_frame_t);

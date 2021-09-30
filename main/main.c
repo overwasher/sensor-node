@@ -30,7 +30,10 @@ static const char* TAG = "main";
 static void show_memory(void* pvParameters){
 	while(1){
 		ESP_LOGI(TAG, "free heap: %d", esp_get_free_heap_size());
-		vTaskDelay(pdMS_TO_TICKS(5000));
+#ifdef CONFIG_PM_PROFILING
+		ESP_ERROR_CHECK(esp_pm_dump_locks(stdout));
+#endif
+		vTaskDelay(pdMS_TO_TICKS(10000));
 	}
 }
 
@@ -47,7 +50,6 @@ void app_main(){
 	nvs_flash_init();
     ESP_ERROR_CHECK(esp_netif_init());
 	
-
     ESP_ERROR_CHECK(esp_event_loop_create_default());
 
 	ESP_ERROR_CHECK( gpio_install_isr_service(0) );
@@ -55,35 +57,26 @@ void app_main(){
 	esp_pm_config_esp32_t pm_conf = {
 		.max_freq_mhz = 80,
 		.min_freq_mhz = 10,
-		.light_sleep_enable = true
+		.light_sleep_enable = true,
 	};
-	pm_conf.light_sleep_enable = true;
 	ESP_ERROR_CHECK(esp_pm_configure(&pm_conf) );
-	ESP_ERROR_CHECK(esp_sleep_enable_timer_wakeup(20*1e6) );
 	wifi_init();
 	
 	xTaskCreate(show_memory, "show_memory", configMINIMAL_STACK_SIZE * 5, NULL, 5, NULL);
-	
-	if (start_communication() == ESP_OK){
-			ESP_LOGI(TAG, "connected successfully");
-			initialize_sntp();
-			while (sntp_get_sync_status() == SNTP_SYNC_STATUS_RESET) {
-				ESP_LOGI(TAG, "Waiting for system time to be set...");
-				vTaskDelay(2000 / portTICK_PERIOD_MS);
-			}
-			accelerometer_init();
-			activity_detection_init();
-			telemetry_init();
+	while (start_communication() != ESP_OK){
+		ESP_LOGI(TAG, "can't connect to wi-fi, going to sleep");
+		vTaskDelay(20000 / portTICK_PERIOD_MS);
 	}
+	initialize_sntp();
+	while (sntp_get_sync_status() == SNTP_SYNC_STATUS_RESET) {
+		ESP_LOGI(TAG, "Waiting for system time to be set...");
+		vTaskDelay(2000 / portTICK_PERIOD_MS);
+	}
+	stop_communication();
+	ESP_LOGI(TAG, "have system time set, initializing other modules");
 
-	/*
-	while (1){
-		if (start_communication() == ESP_OK){
-			ESP_LOGI(TAG, "connected successfully");
-			send_status();
-			stop_communication();
-		};
-		// ESP_ERROR_CHECK(esp_light_sleep_start() );
-	}*/
+	accelerometer_init();
+	activity_detection_init();
+	telemetry_init();
 
 }

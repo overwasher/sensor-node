@@ -10,6 +10,7 @@
 
 #include "overwatcher_communicator.h"
 #include "credentials.h"
+#include "wifi_manager.h"
 
 // #define BASEURL "http://192.168.43.18:5000/"
 #define BASEURL "https://overwatcher.ow.dcnick3.me/"
@@ -53,6 +54,10 @@ static esp_err_t _http_event_handle(esp_http_client_event_t *evt)
 }
 
 void send_status(bool status){
+	if (start_communication() != ESP_OK){
+		ESP_LOGE(TAG, "could not start communication, therefore did not send status");
+		return;
+	}
 	esp_http_client_config_t config = {
 	   .url = BASEURL "sensor/v1/update",
 	   .event_handler = _http_event_handle,
@@ -62,23 +67,27 @@ void send_status(bool status){
 	};
 	esp_http_client_handle_t client = esp_http_client_init(&config);
     
-    esp_http_client_set_header(client, "Authorization", AUTH_TOKEN);
-    esp_http_client_set_header(client, "Content-Type", "application/json");
+    ESP_ERROR_CHECK(esp_http_client_set_header(client, "Authorization", AUTH_TOKEN));
+    ESP_ERROR_CHECK(esp_http_client_set_header(client, "Content-Type", "application/json"));
 
     char json_status[30];
     sniprintf(json_status, sizeof(json_status), "{\"state\":\"%s\"}", status?"active":"inactive");
 
-    esp_http_client_set_post_field(client, json_status, strlen(json_status));
+    ESP_ERROR_CHECK(esp_http_client_set_post_field(client, json_status, strlen(json_status)));
 	esp_err_t err = esp_http_client_perform(client);
-    ESP_LOGI(TAG, "sent %s", json_status);
 
     if (err == ESP_OK) {
-	   ESP_LOGI(TAG, "Status = %d, content_length = %d",
+		ESP_LOGI(TAG, "sent %s", json_status);
+	    ESP_LOGI(TAG, "Status = %d, content_length = %d",
 			   esp_http_client_get_status_code(client),
 			   esp_http_client_get_content_length(client));
 	}
+	else{
+		ESP_LOGE(TAG, "client_perform() failed -> did not send status");
+	}
 
 	esp_http_client_cleanup(client);
+	stop_communication();
 }
 
 
@@ -118,6 +127,11 @@ static telemetry_parcel_header_t fill_parcel_header(void){
 }
 
 void send_telemetry(const uint8_t* data, size_t size, size_t head, size_t tail){
+	if (start_communication() != ESP_OK){
+		ESP_LOGE(TAG, "could not start communication, therefore did not send telemetry");
+		return;
+	}
+
 	telemetry_parcel_header_t telemetry_parcel_header = fill_parcel_header();
 	ESP_LOGI(TAG, "size of parcel header is %zu", sizeof(telemetry_parcel_header));
 	ESP_LOGI(TAG, "stub for send_telemetry with pointer to data %p, size %zu, head %zu and tail %zu", data, size, head, tail);
@@ -130,19 +144,18 @@ void send_telemetry(const uint8_t* data, size_t size, size_t head, size_t tail){
 	};
 	esp_http_client_handle_t client = esp_http_client_init(&config);
 	
-    esp_http_client_set_header(client, "Authorization", AUTH_TOKEN);
-    esp_http_client_set_header(client, "Content-Type", "application/octet-stream");
+	ESP_ERROR_CHECK(esp_http_client_set_header(client, "Authorization", AUTH_TOKEN));
+    ESP_ERROR_CHECK(esp_http_client_set_header(client, "Content-Type", "application/octet-stream"));
 
 	size_t parcel_len = (tail - head + size) % size + sizeof(telemetry_parcel_header);
 	if (esp_http_client_open(client, parcel_len) != ESP_OK){
 		ESP_LOGE(TAG, "Failed to connect to server");
-		esp_http_client_cleanup(client);
-		return;
+		goto finally1;
 	}
 	
 	if (esp_http_client_write(client, (char*) &telemetry_parcel_header, sizeof(telemetry_parcel_header)) != sizeof(telemetry_parcel_header)){
 		ESP_LOGE(TAG, "Writing header failed");
-		goto finally;
+		goto finally2;
 	}
 
 	// head-to-tail, or
@@ -153,12 +166,12 @@ void send_telemetry(const uint8_t* data, size_t size, size_t head, size_t tail){
 			|| esp_http_client_write(client, (char*) data, tail) != tail))
 	{
 		ESP_LOGE(TAG, "Writing measurements failed");
-		goto finally;
+		goto finally2;
 	}
 	int content_length = esp_http_client_fetch_headers(client);
 	if (content_length == -1){
 		ESP_LOGE(TAG, "esp_http_client_fetch_headers() failed");
-		goto finally;
+		goto finally2;
 	}
 	char output_buffer[256] = {0};
 	int data_read = esp_http_client_read_response(client, output_buffer, 256);
@@ -173,7 +186,9 @@ void send_telemetry(const uint8_t* data, size_t size, size_t head, size_t tail){
 
 
 
-finally:
+finally2:
 	esp_http_client_close(client);
+finally1:
 	esp_http_client_cleanup(client);
+	stop_communication();
 }

@@ -4,6 +4,8 @@
 #include "esp_pm.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/event_groups.h"
+#include "freertos/semphr.h"
+
 #include "esp_log.h"
 #include "wifi_manager.h"
 #include "credentials.h"
@@ -20,6 +22,9 @@ static EventGroupHandle_t s_wifi_event_group;
 #define WIFI_CONNECTED_BIT BIT0
 #define WIFI_FAIL_BIT      BIT1
 #define EXAMPLE_ESP_MAXIMUM_RETRY 5
+
+static int comm_request_cnt = 0;
+static SemaphoreHandle_t comm_request_cnt_lock;
 
 static int s_retry_num = 0;
 
@@ -45,8 +50,7 @@ static void event_handler(void* arg, esp_event_base_t event_base,
     }
 }
 
-
-esp_err_t start_communication(){
+static esp_err_t start_communication_impl(){
     s_retry_num = 0;
     esp_err_t res = ESP_ERR_WIFI_NOT_CONNECT;
     esp_pm_lock_acquire(pm_lock_handle);
@@ -70,9 +74,6 @@ esp_err_t start_communication(){
 			.ssid = ESP_WIFI_SSID,
 			.password = ESP_WIFI_PASS,
 			.bssid_set = false,
-            /* Setting a password implies station will connect to all security modes including WEP/WPA.
-             * However these modes are deprecated and not advisable to be used. Incase your Access point
-             * doesn't support WPA2, these mode can be enabled by commenting below line */
             .threshold.authmode = WIFI_AUTH_WPA2_PSK,
             .pmf_cfg = {
                 .capable = true,
@@ -115,12 +116,37 @@ esp_err_t start_communication(){
     return res;
 }
 
-
-void stop_communication(void){
+static void stop_communication_impl(void){
 	esp_wifi_stop();
     esp_pm_lock_release(pm_lock_handle);
 	ESP_LOGI(TAG, "Communication stopped");
 }
+
+esp_err_t start_communication(){
+    esp_err_t result;
+    xSemaphoreTake(comm_request_cnt_lock, portMAX_DELAY);
+    if (comm_request_cnt == 0){
+        result = start_communication_impl();
+        if (result == ESP_OK) comm_request_cnt++;
+    }
+    else{
+        result = ESP_OK;
+        comm_request_cnt++;
+    }
+    xSemaphoreGive(comm_request_cnt_lock);
+    return result;
+}
+
+
+void stop_communication(void){
+    xSemaphoreTake(comm_request_cnt_lock, portMAX_DELAY);
+    if (comm_request_cnt == 1){
+        stop_communication_impl();
+    }
+    comm_request_cnt--;
+    xSemaphoreGive(comm_request_cnt_lock);
+}
+
 
 void wifi_init(void){
     ESP_ERROR_CHECK( esp_pm_lock_create(ESP_PM_NO_LIGHT_SLEEP, 0, "communication", &pm_lock_handle) );
@@ -129,4 +155,6 @@ void wifi_init(void){
 	ESP_ERROR_CHECK( esp_wifi_init(&init_config) );
 	ESP_ERROR_CHECK( esp_wifi_set_storage(WIFI_STORAGE_RAM) );
 	ESP_ERROR_CHECK( esp_wifi_set_mode(WIFI_MODE_STA) );
+    
+    comm_request_cnt_lock = xSemaphoreCreateMutex();
 }
