@@ -126,6 +126,18 @@ CONFIG_PARTITION_TABLE_MD5=y
 # end of Partition Table
 
 #
+# Overwatcher Configuration
+#
+CONFIG_BASEURL="https://overwatcher.ow.dcnick3.me/"
+# end of Overwatcher Configuration
+
+#
+# Functional Configuration
+#
+CONFIG_TELEMETRY=y
+# end of Functional Configuration
+
+#
 # Compiler options
 #
 CONFIG_COMPILER_OPTIMIZATION_DEFAULT=y
@@ -447,7 +459,7 @@ CONFIG_ESP_NETIF_TCPIP_ADAPTER_COMPATIBLE_LAYER=y
 #
 CONFIG_PM_ENABLE=y
 # CONFIG_PM_DFS_INIT_AUTO is not set
-CONFIG_PM_PROFILING=y
+# CONFIG_PM_PROFILING is not set
 # CONFIG_PM_TRACE is not set
 # CONFIG_PM_SLP_IRAM_OPT is not set
 # CONFIG_PM_RTOS_IDLE_OPT is not set

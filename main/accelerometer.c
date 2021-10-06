@@ -15,21 +15,23 @@
 
 static const char* TAG = "accel";
 
-#define MPU6050_SDA_IO 26//4
-#define MPU6050_SCL_IO 25//2// 0//5
+#define MPU6050_SDA_IO 26
+#define MPU6050_SCL_IO 25
 #define MPU6050_FREQ_HZ 4e5
 
 #define MPU6050_WIP_IO 13
 #define MPU6050_INT_IO 14
 
-static uint8_t buffer[1024];
+static uint8_t buffer[1024]; // to store telemetry from accelerometer after interrupt
 
 static TaskHandle_t accel_handle;
 
+// convert accelerations to milli-g (where g is gravity of Earth)
 static int16_t map_to_mg(int16_t value){
     return ((int32_t) value) * 16000/(1<<15);
 }
- 
+
+// when interrupt from accelerometer arrives, let accel_task_function() handle it
 static void IRAM_ATTR mpu_isr_handler(void* arg)
 {
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
@@ -86,13 +88,11 @@ static void accel_task_function(void* args){
     mpu6050_set_int_fifo_buffer_overflow_enabled(true);
     mpu6050_set_accel_fifo_enabled(true);
     while(1){
-        if (ulTaskNotifyTake(pdFALSE, portMAX_DELAY) == 0){  //if ulTaskNotifyGive took place, then it would be 1
-            ESP_LOGE(TAG, "Interrupt on full buffer did not arrive");
-            abort();
-        }
+        ulTaskNotifyTake(pdFALSE, portMAX_DELAY);
         gpio_set_level(MPU6050_WIP_IO, 1);
         mpu6050_get_int_status();
 
+        // check if interrupt was indeed caused by full fifo of the accelerometer (not some spurious interrupt)
         int actual_buffer_size = mpu6050_get_fifo_count();
         if (actual_buffer_size != sizeof(buffer)) {
             ESP_LOGE(TAG, "received interrupt and buffer size is %d, while expected budder size is %zu", actual_buffer_size, sizeof(buffer));
@@ -105,7 +105,6 @@ static void accel_task_function(void* args){
             ptr[i].x = map_to_mg(be16toh(ptr[i].x));
             ptr[i].y = map_to_mg(be16toh(ptr[i].y));
             ptr[i].z = map_to_mg(be16toh(ptr[i].z));
-            // ESP_LOGI(TAG, "x: %d, y: %d, z: %d", ptr[i].x, ptr[i].y, ptr[i].z);
         }
         
         gpio_set_level(MPU6050_WIP_IO, 0);
@@ -116,10 +115,6 @@ static void accel_task_function(void* args){
             .buffer_count = number_of_frames
         };
         ESP_ERROR_CHECK(esp_event_post_to(accel_event_loop, OW_EVENT, OW_EVENT_ON_ACCEL_BUFFER, &accel_buffer_dto, sizeof(accel_buffer_dto), 0));
-
-        // mpu6050_get_acceleration(&accel);
-        // ESP_LOGI(TAG, "x: %d, y: %d, z: %d", map_to_mg(accel.accel_x), map_to_mg(accel.accel_y), map_to_mg(accel.accel_z));
-        // vTaskDelay( pdMS_TO_TICKS(20) );
     }
 }
 
@@ -127,17 +122,19 @@ static void accel_task_function(void* args){
 esp_event_loop_handle_t accel_event_loop;
 
 void accelerometer_init(){
+    // configuring i2c wires:
     i2c_config_t conf = {
         .mode = I2C_MODE_MASTER,
-        .sda_io_num = MPU6050_SDA_IO,         // select GPIO specific to your project
+        .sda_io_num = MPU6050_SDA_IO,         // project-specific GPIO 
         .sda_pullup_en = GPIO_PULLUP_ENABLE,
-        .scl_io_num = MPU6050_SCL_IO,         // select GPIO specific to your project
+        .scl_io_num = MPU6050_SCL_IO,         // project-specific GPIO
         .scl_pullup_en = GPIO_PULLUP_ENABLE,
-        .master.clk_speed = MPU6050_FREQ_HZ,  // select frequency specific to your project
-        // .clk_flags = 0,          /*!< Optional, you can use I2C_SCLK_SRC_FLAG_* flags to choose i2c source clock here. */
+        .master.clk_speed = MPU6050_FREQ_HZ,  // project-specific frequency
     };
     ESP_ERROR_CHECK(i2c_param_config(I2C_NUM_0, &conf));
     ESP_ERROR_CHECK(i2c_driver_install(I2C_NUM_0, I2C_MODE_MASTER, 0, 0, 0));
+    
+    // event loop that receives and handles event OW_EVENT_ON_ACCEL_BUFFER (when it arrives from the accelerometer)
     esp_event_loop_args_t loop_args = {
         .queue_size = CONFIG_ESP_SYSTEM_EVENT_QUEUE_SIZE,
         .task_name = "ad_evt",

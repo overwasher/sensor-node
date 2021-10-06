@@ -141,7 +141,7 @@ static void sending_task_function(void* args){
 void telemetry_init(void){
     #ifdef TELEMETRY_USE_FLASH
     esp_partition_iterator_t storage_iter = esp_partition_find(PARTITION_TYPE, PARTITION_SUBTYPE, PARTITION_LABEL);
-    // записывать timestampы просто в памяти, но потом
+    // TODO: records timestamps in memory
     if (storage_iter == NULL){
         ESP_LOGE(TAG, "did not find partition table for storing buffers");
         abort();

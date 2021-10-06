@@ -1,0 +1,17 @@
+menu "Overwatcher Configuration"
+
+    config BASEURL
+        string "Base URL of the server"
+        default "https://overwatcher.ow.dcnick3.me/"
+        help
+            Note that after changing base url, it is necessary to update SSL certificate in main\overwatcher-ow-dcnick3-me.pem
+            
+endmenu
+
+menu "Functional Configuration"
+        
+    config TELEMETRY
+        bool "Enable sending raw telemetry data"
+        default y
+            
+endmenu

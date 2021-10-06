@@ -12,15 +12,12 @@
 #include "credentials.h"
 #include "wifi_manager.h"
 
-// #define BASEURL "http://192.168.43.18:5000/"
-#define BASEURL "https://overwatcher.ow.dcnick3.me/"
+#define BASEURL CONFIG_BASEURL
 
 extern const char overwatcher_ow_dcnick3_me_pem_start[] asm("_binary_overwatcher_ow_dcnick3_me_pem_start");
 extern const char overwatcher_ow_dcnick3_me_pem_end[]   asm("_binary_overwatcher_ow_dcnick3_me_pem_end");
 
 static const char* TAG = "comm";
-
-
 
 static esp_err_t _http_event_handle(esp_http_client_event_t *evt)
 {
@@ -35,7 +32,7 @@ static esp_err_t _http_event_handle(esp_http_client_event_t *evt)
 			ESP_LOGI(TAG, "HTTP_EVENT_HEADER_SENT");
 			break;
 		case HTTP_EVENT_ON_HEADER:
-			// ESP_LOGI(TAG, "HTTP_EVENT_ON_HEADER");
+			ESP_LOGI(TAG, "HTTP_EVENT_ON_HEADER");
 			break;
 		case HTTP_EVENT_ON_DATA:
 			ESP_LOGI(TAG, "HTTP_EVENT_ON_DATA, len=%d", evt->data_len);
@@ -90,7 +87,7 @@ void send_status(bool status){
 	stop_communication();
 }
 
-
+#ifdef CONFIG_TELEMETRY
 typedef struct {
 	uint32_t magic;
 	uint32_t version;
@@ -194,3 +191,4 @@ finally1:
 	esp_http_client_cleanup(client);
 	stop_communication();
 }
+#endif

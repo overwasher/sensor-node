@@ -21,12 +21,13 @@ static EventGroupHandle_t s_wifi_event_group;
  * - we failed to connect after the maximum amount of retries */
 #define WIFI_CONNECTED_BIT BIT0
 #define WIFI_FAIL_BIT      BIT1
-#define EXAMPLE_ESP_MAXIMUM_RETRY 5
+#define CONNECT_TO_AP_MAXIMUM_RETRY 5
 
-static int comm_request_cnt = 0;
-static SemaphoreHandle_t comm_request_cnt_lock;
+static int s_retry_num = 0; //counts failed attempts to start communication
 
-static int s_retry_num = 0;
+static int comm_request_cnt = 0; //counts communication requests from different tasks
+static SemaphoreHandle_t comm_request_cnt_lock; //lock for comm_request_cnt, as it is a critical region
+
 
 static void event_handler(void* arg, esp_event_base_t event_base,
                                 int32_t event_id, void* event_data)
@@ -34,7 +35,7 @@ static void event_handler(void* arg, esp_event_base_t event_base,
     if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START) {
         esp_wifi_connect();
     } else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED) {
-        if (s_retry_num < EXAMPLE_ESP_MAXIMUM_RETRY) {
+        if (s_retry_num < CONNECT_TO_AP_MAXIMUM_RETRY) {
             esp_wifi_connect();
             s_retry_num++;
             ESP_LOGI(TAG, "retry to connect to the AP");
@@ -53,7 +54,7 @@ static void event_handler(void* arg, esp_event_base_t event_base,
 static esp_err_t start_communication_impl(){
     s_retry_num = 0;
     esp_err_t res = ESP_ERR_WIFI_NOT_CONNECT;
-    esp_pm_lock_acquire(pm_lock_handle);
+    esp_pm_lock_acquire(pm_lock_handle); //indicates not to sleep while there is communication via wifi
     s_wifi_event_group = xEventGroupCreate();
     esp_event_handler_instance_t instance_any_id;
     esp_event_handler_instance_t instance_got_ip;
@@ -118,7 +119,7 @@ static esp_err_t start_communication_impl(){
 
 static void stop_communication_impl(void){
 	esp_wifi_stop();
-    esp_pm_lock_release(pm_lock_handle);
+    esp_pm_lock_release(pm_lock_handle); //after communication is stopped, esp can enter light sleep mode
 	ESP_LOGI(TAG, "Communication stopped");
 }
 

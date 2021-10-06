@@ -27,7 +27,7 @@
 static const char* TAG = "main";
 
 
-static void show_memory(void* pvParameters){
+static void show_profile(void* pvParameters){
 	while(1){
 		ESP_LOGI(TAG, "free heap: %d", esp_get_free_heap_size());
 #ifdef CONFIG_PM_PROFILING
@@ -62,7 +62,7 @@ void app_main(){
 	ESP_ERROR_CHECK(esp_pm_configure(&pm_conf) );
 	wifi_init();
 	
-	xTaskCreate(show_memory, "show_memory", configMINIMAL_STACK_SIZE * 5, NULL, 5, NULL);
+	xTaskCreate(show_profile, "show_profile", configMINIMAL_STACK_SIZE * 5, NULL, 5, NULL);
 	while (start_communication() != ESP_OK){
 		ESP_LOGI(TAG, "can't connect to wi-fi, going to sleep");
 		vTaskDelay(20000 / portTICK_PERIOD_MS);
@@ -77,6 +77,7 @@ void app_main(){
 
 	accelerometer_init();
 	activity_detection_init();
+#ifdef CONFIG_TELEMETRY
 	telemetry_init();
-
+#endif
 }
