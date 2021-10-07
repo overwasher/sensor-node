@@ -1,17 +1,126 @@
-menu "Overwatcher Configuration"
-
-    config BASEURL
-        string "Base URL of the server"
-        default "https://overwatcher.ow.dcnick3.me/"
-        help
-            Note that after changing base url, it is necessary to update SSL certificate in main\overwatcher-ow-dcnick3-me.pem
-            
-endmenu
-
-menu "Functional Configuration"
+menu "Sensor-node"
         
+    menu "Overwatcher"
+
+        config BASEURL
+            string "Base URL of the server"
+            default "https://overwatcher.ow.dcnick3.me/"
+            help
+                Note that after changing base url, it is necessary to update SSL certificate in main\overwatcher-ow-dcnick3-me.pem
+                
+    endmenu
+
+    menu "Accelerometer"
+
+        config ACCEL_SDA_IO
+            int "SDA GPIO number"
+            range 0 48
+            default 26
+
+        config ACCEL_SCL_IO
+            int "SCL GPIO number"
+            range 0 48
+            default 25
+
+        config ACCEL_FREQ_HZ
+            int "Frequency of clock of the i2c wire"
+            range 1 1000000
+            default 400000
+            help
+                I2C clock frequency for master mode, (no higher than 1MHz for now)
+
+        config ACCEL_INT_IO
+            int "GPIO number of the interrupt pin"
+            range 0 48
+            default 14
+                
+    endmenu
+    
+    menu "Telemetry"
+
     config TELEMETRY
         bool "Enable sending raw telemetry data"
         default y
+    
+        config TELEMETRY_RESERVED_SPACE
+            int "Reserved space"
+            default 30
+            help
+                Number of buffers for which space is left before sending task starts.
             
+        config TELEMETRY_BUFFER_ALIGNMENT
+            int "Buffer alignment"
+            default 1024
+            help
+                In flash, buffers are aligned to a frame with predefined size (1024 by default)
+    
+                
+        choice TELEMETRY_USE
+            prompt "Intermediate telemetry storage"
+            default TELEMETRY_USE_FLASH
+            help
+                Where raw telemetry is saved before it is sent to the Overwatcher
+    
+            config TELEMETRY_USE_FLASH
+                bool "flash"
+            config TELEMETRY_USE_MEMORY
+                bool "memory"
+        endchoice
+
+        menu "Flash"
+            # depends on TELEMETRY_USE_FLASH
+        
+            config PARTITION_TYPE
+                int "Partition type"
+                default 64
+            
+            config PARTITION_SUBTYPE
+                int "Partition subtype"
+                default 0
+        
+            config PARTITION_LABEL
+                string "Partition label"
+                default "storage"
+                    
+        endmenu
+        
+    endmenu
+
+    menu "Activity Detection"
+
+        config ACTD_INERTIA
+            int "Inertia"
+            default 50
+            help
+                number of statuses that account for conservativity
+        
+        config ACTD_BUFFERS_THRESHOLD
+            int "Buffers threshold"
+            default 20
+            help
+                number of acvive statuses among most recent ones sufficient to assert that status is 'active'
+
+        config ACTD_ACCEL_THRESHOLD
+            int "Acceleration Difference threshold"
+            default 20
+            help
+                difference in accelerations between 10 and  90% that make status 'active'
+
+        config ACTD_UPDATE_INTERVAL
+            int "Update interval"
+            default 120000000
+            help
+                in microseconds
+
+    endmenu
+
+    menu "Development config"
+
+        config DEV_WIP_IO
+            int "GPIO number of the reserved WIP pin"
+            range 0 48
+            default 13
+                
+    endmenu
+
 endmenu

@@ -17,10 +17,10 @@ static const char* TAG = "ad";
 
 static TaskHandle_t sending_handle;
 
-static const int INERTIA = 50; //number of statuses that account for conservativity
-static const int BUFFERS_THRESHOLD = 20; //number of acvive statuses among most recent ones sufficient to assert that status is 'active'
-static const int ACCEL_THRESHOLD = 20; //difference in accelerations between 10 and  90% that make status 'active'
-static const int UPDATE_INTERVAL = 120 * 1e6; //in microseconds
+static const int INERTIA = CONFIG_ACTD_INERTIA; 
+static const int BUFFERS_THRESHOLD = CONFIG_ACTD_BUFFERS_THRESHOLD; 
+static const int ACCEL_THRESHOLD = CONFIG_ACTD_ACCEL_THRESHOLD;
+static const int UPDATE_INTERVAL = CONFIG_ACTD_UPDATE_INTERVAL;
 
 
 enum class machine_state{

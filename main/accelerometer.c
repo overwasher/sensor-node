@@ -15,18 +15,18 @@
 
 static const char* TAG = "accel";
 
-#define MPU6050_SDA_IO 26
-#define MPU6050_SCL_IO 25
-#define MPU6050_FREQ_HZ 4e5
+#define MPU6050_SDA_IO CONFIG_ACCEL_SDA_IO
+#define MPU6050_SCL_IO CONFIG_ACCEL_SCL_IO
+#define MPU6050_FREQ_HZ CONFIG_ACCEL_FREQ_HZ
 
-#define MPU6050_WIP_IO 13
-#define MPU6050_INT_IO 14
+#define MPU6050_WIP_IO CONFIG_DEV_WIP_IO
+#define MPU6050_INT_IO CONFIG_ACCEL_INT_IO
 
 static uint8_t buffer[1024]; // to store telemetry from accelerometer after interrupt
 
 static TaskHandle_t accel_handle;
 
-// convert accelerations to milli-g (where g is gravity of Earth)
+// convert accelerations to milli-g (where g is gravity of the Earth)
 static int16_t map_to_mg(int16_t value){
     return ((int32_t) value) * 16000/(1<<15);
 }
@@ -125,11 +125,11 @@ void accelerometer_init(){
     // configuring i2c wires:
     i2c_config_t conf = {
         .mode = I2C_MODE_MASTER,
-        .sda_io_num = MPU6050_SDA_IO,         // project-specific GPIO 
+        .sda_io_num = MPU6050_SDA_IO,
         .sda_pullup_en = GPIO_PULLUP_ENABLE,
-        .scl_io_num = MPU6050_SCL_IO,         // project-specific GPIO
+        .scl_io_num = MPU6050_SCL_IO,
         .scl_pullup_en = GPIO_PULLUP_ENABLE,
-        .master.clk_speed = MPU6050_FREQ_HZ,  // project-specific frequency
+        .master.clk_speed = MPU6050_FREQ_HZ,
     };
     ESP_ERROR_CHECK(i2c_param_config(I2C_NUM_0, &conf));
     ESP_ERROR_CHECK(i2c_driver_install(I2C_NUM_0, I2C_MODE_MASTER, 0, 0, 0));

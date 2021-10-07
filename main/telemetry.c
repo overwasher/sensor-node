@@ -13,16 +13,16 @@
 #include "overwatcher_communicator.h"
 
 
-#define TELEMETRY_USE_FLASH
+#define TELEMETRY_USE_FLASH CONFIG_TELEMETRY_USE_FLASH
 
 #ifdef TELEMETRY_USE_FLASH
-#define PARTITION_TYPE 64
-#define PARTITION_SUBTYPE 0
-#define PARTITION_LABEL "storage"
+#define PARTITION_TYPE CONFIG_PARTITION_TYPE
+#define PARTITION_SUBTYPE CONFIG_PARTITION_SUBTYPE
+#define PARTITION_LABEL CONFIG_PARTITION_LABEL
 #endif
 
-#define RESERVED_SPACE 30 // number of buffers for which space is left before sending task starts.
-#define BUFFER_ALIGNMENT 1024 // buffers are aligned to 1024 bytes
+#define RESERVED_SPACE CONFIG_TELEMETRY_RESERVED_SPACE
+#define BUFFER_ALIGNMENT CONFIG_TELEMETRY_BUFFER_ALIGNMENT
 
 static const char* TAG = "tm";
 static TaskHandle_t sending_handle;

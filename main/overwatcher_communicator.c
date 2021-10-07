@@ -87,7 +87,7 @@ void send_status(bool status){
 	stop_communication();
 }
 
-#ifdef CONFIG_TELEMETRY
+
 typedef struct {
 	uint32_t magic;
 	uint32_t version;
@@ -191,4 +191,3 @@ finally1:
 	esp_http_client_cleanup(client);
 	stop_communication();
 }
-#endif

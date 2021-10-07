@@ -126,16 +126,57 @@ CONFIG_PARTITION_TABLE_MD5=y
 # end of Partition Table
 
 #
-# Overwatcher Configuration
+# Sensor-node
 #
-CONFIG_BASEURL="https://overwatcher.ow.dcnick3.me/"
-# end of Overwatcher Configuration
 
 #
-# Functional Configuration
+# Overwatcher
+#
+CONFIG_BASEURL="https://overwatcher.ow.dcnick3.me/"
+# end of Overwatcher
+
+#
+# Accelerometer
+#
+CONFIG_ACCEL_SDA_IO=26
+CONFIG_ACCEL_SCL_IO=25
+CONFIG_ACCEL_FREQ_HZ=400000
+CONFIG_ACCEL_INT_IO=14
+# end of Accelerometer
+
+#
+# Telemetry
 #
 CONFIG_TELEMETRY=y
-# end of Functional Configuration
+CONFIG_TELEMETRY_RESERVED_SPACE=30
+CONFIG_TELEMETRY_BUFFER_ALIGNMENT=1024
+CONFIG_TELEMETRY_USE_FLASH=y
+# CONFIG_TELEMETRY_USE_MEMORY is not set
+
+#
+# Flash
+#
+CONFIG_PARTITION_TYPE=64
+CONFIG_PARTITION_SUBTYPE=0
+CONFIG_PARTITION_LABEL="storage"
+# end of Flash
+# end of Telemetry
+
+#
+# Activity Detection
+#
+CONFIG_ACTD_INERTIA=50
+CONFIG_ACTD_BUFFERS_THRESHOLD=20
+CONFIG_ACTD_ACCEL_THRESHOLD=20
+CONFIG_ACTD_UPDATE_INTERVAL=120000000
+# end of Activity Detection
+
+#
+# Development config
+#
+CONFIG_DEV_WIP_IO=13
+# end of Development config
+# end of Sensor-node
 
 #
 # Compiler options
