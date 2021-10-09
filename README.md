@@ -19,8 +19,13 @@ Term 'sensor-node' encapsulates both software and hardware parts.
 
 Note that sensor-node component is **not** written in the object-oriented paradigm, because the latter is not meant for the embedded programming. Reason is that philosophy of OOP and practicalities of hardware are on distant, hence incompatible levels of abstraction. However, we are making use of other more suitable design patterns, that allow us to follow single responsibility principle and separate interfaces.
 
+## Hardware: the PCB
 
-## Architecture
+![pcb 3d view](https://raw.githubusercontent.com/overwasher/sensor-node-hardware/master/3DVIEW_RENDER.png)
+
+We've created a PCB design so that you don't have to design your own. You get more details [here](https://github.com/overwasher/sensor-node-hardware)
+
+## Software Architecture
 Sensor-node software comes as several modules with particular responsibilities:
 - [`Accelerometer`](https://github.com/overwasher/sensor-node/blob/main/main/accelerometer.c): initializes I2C and MPU6050. Upon filling buffer of MPU6050, ESP32 receives interrupt and reads acceletation data
 - [`Activity detection`](https://github.com/overwasher/sensor-node/blob/main/main/activity_detection.c): upon receiving buffer with telemetry, decides whether status of the washing machine has changed, and if it was the case, signals `Overwatcher Communicator` to send corresponding update to the server
