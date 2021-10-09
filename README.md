@@ -58,25 +58,44 @@ Buffer is an atomic unit of processing in the activity detection algorithm. It i
 - The accelerations are scaled to milli-g instead of device-specific scale (1 mg ~= 0.00981 m/s^2)
 - The last truncated frame is not stored there; only the full 170 frames are
 
-### Sensitivity
+### On the vibration physics
 
-The sensitivity, a marker of present acceleration, is a decision upon a buffer.
+We measure the vibration from the washing mashine, but where does it come from and what is it like? The picture below shows a model that can be useful to understand it.
 
-We noted that the vector sum of accelerations along each component is a sum of gravity of the Earth plus custom acceleration that the device is subject to — which is the one caused by approximately circular movement in the assumed use case. So, by assumption, if the washing machine is working, we expect a greater magnitude of acceleration when the washing machine drum is in the bottommost position (as gravity and centrifugal forces are in the same direction) and the lesser magnitude — in the uppermost position (where gravity and centrifugal forces are in the opposite direction).
+![image](https://user-images.githubusercontent.com/10363282/136657192-1a45c128-8906-4a9e-99a8-c9f786d492b5.png)
 
-So based on the buffer entries, we calculate 170 instantaneous magnitudes. With the described motivation, we would set the difference between maximum and minimum magnitudes as the decisive metric. If it is above a certain threshold, we conclude that there was movement. If it is below that threshold, we assume there was no movement.
+The drum of the washing machine (`M` on the diagram) is suspended inside the washing machine to reduce outside vibrations. The suspension can be modelled as pairs of springs and dampers (`k_x`, `k_y`, `b_x`, `b_y`).
 
-To exclude the influence of the noise, instead of minimum and maximum, we choose 10th and 90th percentiles. 
+Note that in our case the vibrations are still present on the lid, as it linked with the drum.
 
-The threshold of the difference is a direct parameter of sensitivity; currently, it is 20 milli-g (~0.2 m/s^2). Such choice of parameters yields highly accurate interpretation of whether the accelerometer experienced movement or not.
+The core source of the vibrations is an eccentric rotating mass - the clothes (`m`). By rotating they induce harmonic forces that cause the drum to vibrate (harmonically) along x and y.
 
+Precisely these vibrations are measured by the accelerometer, although offset from zero by gravity.
 
-### Conservatism
-The сonservatism is needed to account for false-negative (more important) and false-positive (less important) results:
-- During the washing cycle, there are gaps when the mode is changed, and water is being poured in and out. So, while the washing machine is absolutely motionless, it is still active, which should be reflected in the reported status.
-- We also need to exclude the occasional movement of the washing machine door (where the accelerometer is attached) when asserting that it is active.
+![image](https://user-images.githubusercontent.com/10363282/136657175-e68f2823-3d76-43db-af84-219637be58e2.png)
 
-So the decision is based on a history of decisions on buffers. If out of several most recent buffers (50, which is ~1.4 minutes), 20 or more are asserting that the washing machine was active, it is assumed to be indeed active. Note that we intend some form of bias towards indicating that the washing machine is active — for users, it's preferable not to come when there was a possibility rather than to go and find out that it was in vain.
+(all measurements are in milli-g)
+
+### Sensitivity stage
+
+The sensitivity, a first stage of the activity detection, is a decision upon a buffer: was there an activity or not.
+
+Based on the buffer frames, we calculate 170 instantaneous magnitudes. Then the buffer "amplitude" - the difference between max and min magnitude - is computed. If it is above a certain threshold, we conclude that there was movement. If it is below that threshold, we assume there was no movement.
+
+To exclude the influence of noise (outliers), instead of minimum and maximum, we choose 10th and 90th percentiles of the magnitudes.
+
+The threshold of the difference is a parameter of sensitivity stage; currently, it is 20 milli-g (~0.2 m/s^2). Such a choice of parameters yields a good interpretation of whether the accelerometer experienced movement or not.
+
+### Conservatism stage
+
+The сonservatism, a second stage of the activity detection, is needed to account for the following scenarios:
+
+- During the washing cycle, there are pauses when the mode is changed, and water is being poured in and out. So, while the washing machine is absolutely motionless, it is still active, which should be reflected in the reported status.
+- We also need to exclude the occasional movement of the washing machine door (to which the accelerometer is attached to). The users may do this, but it does not mean that the machine is active.
+
+So the decision is based on a history of decisions on buffers. If out of several most recent buffers (50, which is ~1.4 minutes), 20 or more are asserting that the washing machine was active, it is assumed to be indeed active.
+
+Note that this process may yield false-negative (which are bad) and false-positive (not that bad) results. For users, it's preferable not to come when there was a possibility rather than to go and find out that it was in vain, so the algorithm is biased towards positive decisions.
 
 ### Reporting
 
