@@ -104,9 +104,8 @@ Sensor-node reports to the Overwatcher upon a change of status (trespassing of t
 ## How to build & flash
 
 VScode provides a [nice plugin](https://github.com/espressif/vscode-esp-idf-extension) to work with `esp-idf`: so, install it, clone repo, and build project with `Ctrl+E, B`.
-If you have an ESP32 at your disposal, you can flash the project to it as well.
 
-There is no list of hardware specifications yet. When we finalize hardware design files, we will publish them.
+You can flash it to the board built accoring to [here](https://github.com/overwasher/sensor-node-hardware) hardware design files. Note though, that the software was not yet adapted for this hardware (for example the model of accelerometer used is different). The plan is to manufacture the first batch of the boards and start to adapt the software to them.
 
 ## How to contribute
 
