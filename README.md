@@ -35,13 +35,28 @@ Sensor-node software comes as several modules with particular responsibilities:
 
 ## Activity Detection algorithm explained
 
-The presented Activity Detection algorithm is aware of both specifics of the accelerometer and parameters of the washing cycles of machines in dormitories. Yet it is simple and easily modifiable through parameters adjustment. Furthermore, it satisfies the functional requirement of providing accurate data within 3 minutes delay at most, as was verified through analysis of telemetry and reported statuses at the Overwatcher, and several 'field' tests.
+### Features
 
-In general, the algorithm possesses two mutually complementary properties: sensitivity and сonservatism.
+* domain-aware (knows about the washing mashine cycles)
+* adjustable
+* results propagate fast (< 3 minutes)
 
-### On buffer
+### Data flow
 
-But before sensitivity and сonservatism can be described, the notion of a buffer has to be introduced. Buffer is the atomic unit of processing in the activity detection algorithm. We chose the buffer-based approach due to the nature of communication between ESP32 and the accelerometer: the accelerometer has FIFO memory, and once in 10 ms, it records instantaneous acceleration in 3 components (x, y, z axes, predefined by the spacial position of the device). When FIFO memory fills up, the accelerometer sends interrupt to ESP32, and the latter starts reading FIFO, forming a buffer (which takes ~2ms). FIFO size is 1024 bytes, accelerations along each component are encoded as a 2 bytes number (and there are three components...); hence each buffer has 1024 // (2*3) = 170 instantaneous telemetry entries (thus buffers arrive with the periodicity of ~1.7 seconds). As was checked with the logic analyzer, only one measurement is lost because of interrupt and reading FIFO, and the presented algorithm tolerates such missing values.
+The acceleration data is read at rate of 100 Hz and is accumulated in internal accelerometer FIFO (1024 bytes in size).
+
+The FIFO containts frames - triples of accelerations (x, y, z) encoded as 2-byte signed integers. Note that the size of FIFO (1024) is not divisible by size of frame (2 * 3 = 6). The FIFO can store 170 frames and 4 more bytes, which results in one truncated frame.
+
+When the FIFO becomes full the accelerometer fires an interrupt at ESP32 which reads the FIFO contents into the buffer. Note that at 100 Hz FIFO becomes full aproximately every 1.7 seconds.
+
+Due to weird architecture decisions on accelerometer side one measurement is lost, because interrupt is fired when the new frame cannot fit into the FIFO.
+
+Because of this FIFO-centered hardware architecture, a similar, buffer-based approach is taken to process the data.
+
+Buffer is an atomic unit of processing in the activity detection algorithm. It is similar to the contents of FIFO, but with a few catches:
+
+- The accelerations are scaled to milli-g instead of device-specific scale (1 mg ~= 0.00981 m/s^2)
+- The last truncated frame is not stored there; only the full 170 frames are
 
 ### Sensitivity
 
