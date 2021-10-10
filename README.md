@@ -26,12 +26,23 @@ Note that sensor-node component is **not** written in the object-oriented paradi
 We've created a PCB design so that you don't have to design your own. You get more details [here](https://github.com/overwasher/sensor-node-hardware)
 
 ## Software Architecture
-Sensor-node software comes as several modules with particular responsibilities:
-- [`Accelerometer`](https://github.com/overwasher/sensor-node/blob/main/main/accelerometer.c): initializes I2C and MPU6050. Upon filling buffer of MPU6050, ESP32 receives interrupt and reads acceletation data
-- [`Activity detection`](https://github.com/overwasher/sensor-node/blob/main/main/activity_detection.c): upon receiving buffer with telemetry, decides whether status of the washing machine has changed, and if it was the case, signals `Overwatcher Communicator` to send corresponding update to the server
-- [`Overwatcher Communicator`](https://github.com/overwasher/sensor-node/blob/main/main/overwatcher_communicator.c) establishes an https connection with the server and provides functionality for sending status update and raw telemetry data
-- [`Telemetry`](https://github.com/overwasher/sensor-node/blob/main/main/telemetry.c): upon receiving buffer (in parallel with `Activity detection`), stores buffer to the flash memory. When flash memory becomes almost full, it signals `Overwatcher Communicator` to send raw telemetry.
-- [`Wi-Fi Manager`](https://github.com/overwasher/sensor-node/blob/main/main/wifi_manager.c) initializes wi-fi modules and provides implementation of connecting and disconnecting to the Access Point, which `Overwatcher Communicator` relies on. In general, we want to turn off wi-fi when it is not needed, in order to enter light sleep mode, optimizing power consumption.
+
+Sensor-node software comes as several interacting modules:
+- [`Accelerometer`](https://github.com/overwasher/sensor-node/blob/main/main/accelerometer.c)
+- [`Activity detection`](https://github.com/overwasher/sensor-node/blob/main/main/activity_detection.c)
+- [`Telemetry`](https://github.com/overwasher/sensor-node/blob/main/main/telemetry.c)
+- [`Overwatcher Communicator`](https://github.com/overwasher/sensor-node/blob/main/main/overwatcher_communicator.c)
+- [`Wi-Fi Manager`](https://github.com/overwasher/sensor-node/blob/main/main/wifi_manager.c)
+
+![sensor-node-architecture](https://github.com/overwasher/sensor-node/blob/main/sensor-node-view.jpg)
+
+MPU6050 writes instantaneous accelerations to its FIFO memory, and upon FIFO overflow, it issues an interrupt to ESP32.
+
+In ESP32,
+- `Accelerometer` task, when `FIFO_INTERRUPT` arrives, reads MPU6050's FIFO, saves it, and posts `ON_BUFFER_EVENT` to `accel_event_loop`. Then it starts waiting for the next interrupt in the blocked state.
+- `accel_event_loop`serves only one type of event: an `ON_BUFFER_EVENT` (which `Accelerometer` task posts). This event has two handlers: one performs `Activity Detection`, another one — saves buffer as `Telemetry` in flash or memory. Both handlers, from time to time, initiate sending data to the server by unblocking respective tasks:
+- `ad_sending_task`/`tm_sending_task` wait to be unblocked by the respective handler and send status update/telemetry parcel to Overwatcher. Implementation of sending data is provided in the `Overwatcher Communicator` module.
+- Communication with Overwatcher relies on `Wi-fi Manager` that provides means to initiate and terminate connection with Access Point (i.e. `start_communication()` and `stop_communication()`)
 
 ## Activity Detection algorithm explained
 
