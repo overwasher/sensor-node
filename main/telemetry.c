@@ -141,7 +141,7 @@ static void sending_task_function(void* args){
 void telemetry_init(void){
     #ifdef TELEMETRY_USE_FLASH
     esp_partition_iterator_t storage_iter = esp_partition_find(PARTITION_TYPE, PARTITION_SUBTYPE, PARTITION_LABEL);
-    // TODO: records timestamps in memory
+    // TODO: records timestamps in memory, maybe later
     if (storage_iter == NULL){
         ESP_LOGE(TAG, "did not find partition table for storing buffers");
         abort();
@@ -152,10 +152,8 @@ void telemetry_init(void){
     ESP_LOGI(TAG, "Initialized erased storage, size is %zu", storage_info -> size);
     
     NUMBER_OF_BUFFERS = storage_info -> size / BUFFER_ALIGNMENT;
-    head = (esp_random() % NUMBER_OF_BUFFERS)/4*4 * BUFFER_ALIGNMENT; //head should be aligned 4096 (for erase_range()), buffer alignment is 1024, so...
+    head = (esp_random() % NUMBER_OF_BUFFERS)/4*4 * BUFFER_ALIGNMENT; //head should be aligned 4096 (for erase_range()), buffer alignment is 1024
     tail = head;
-    // for test speed up purposes
-    // tail = (head - 35*BUFFER_ALIGNMENT + storage_info -> size) % storage_info -> size;
     #else
     
     #endif

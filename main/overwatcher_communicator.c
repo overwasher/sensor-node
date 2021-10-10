@@ -32,7 +32,7 @@ static esp_err_t _http_event_handle(esp_http_client_event_t *evt)
 			ESP_LOGI(TAG, "HTTP_EVENT_HEADER_SENT");
 			break;
 		case HTTP_EVENT_ON_HEADER:
-			ESP_LOGI(TAG, "HTTP_EVENT_ON_HEADER");
+			// ESP_LOGI(TAG, "HTTP_EVENT_ON_HEADER");
 			break;
 		case HTTP_EVENT_ON_DATA:
 			ESP_LOGI(TAG, "HTTP_EVENT_ON_DATA, len=%d", evt->data_len);
@@ -149,16 +149,18 @@ void send_telemetry(const uint8_t* data, size_t size, size_t head, size_t tail){
 	size_t parcel_len = (tail - head + size) % size + sizeof(telemetry_parcel_header);
 	if (esp_http_client_open(client, parcel_len) != ESP_OK){
 		ESP_LOGE(TAG, "Failed to connect to server");
-		goto finally1;
+		goto finally1; // cleanup: stop communication (wi-fi) started above
 	}
 	
 	if (esp_http_client_write(client, (char*) &telemetry_parcel_header, sizeof(telemetry_parcel_header)) != sizeof(telemetry_parcel_header)){
 		ESP_LOGE(TAG, "Writing header failed");
-		goto finally2;
+		goto finally2;  // cleanup: both disconnect from server stop communication (wi-fi)
 	}
 
-	// head-to-tail, or
-	// head-to-end and beginning-to-tail
+	// data array is thought of as a queue: moving head and tail are operation analogous to writing and reading queue
+	// there are 2 scenarios, either borders of array are included into parcel or not
+	// , which, in terms of head and tail is either tail is greater that head or not
+	// so we write either from head to tail, or from head to end and from beginning to tail
 	if (tail > head 
 		? (esp_http_client_write(client, (char*) data + head, tail-head) != tail-head)
 		: (esp_http_client_write(client, (char*) data + head, size-head) != size-head
@@ -184,7 +186,7 @@ void send_telemetry(const uint8_t* data, size_t size, size_t head, size_t tail){
 	}
 
 
-
+// using such labels is a common practice when handling errors with releasing previously acquired ressources
 finally2:
 	esp_http_client_close(client);
 finally1:

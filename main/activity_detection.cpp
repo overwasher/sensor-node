@@ -37,6 +37,7 @@ static void on_got_buffer(void* arg, esp_event_base_t event_base, int32_t event_
     accel_buffer_dto_t* typed_event_data = (accel_buffer_dto_t*) event_data;
     
     int n = typed_event_data->buffer_count;
+    // combine accelerations along 3 different axes
     int magnitudes[n];
     for (int i=0; i < n; i++){
         magnitudes[i] = sqrt(typed_event_data->buffer[i].x * typed_event_data->buffer[i].x +
@@ -45,7 +46,7 @@ static void on_got_buffer(void* arg, esp_event_base_t event_base, int32_t event_
     }
 
     std::sort(magnitudes, magnitudes + n);
-
+    // calculate difference between 10th and 90th percentile
     int metric = magnitudes[int(n*0.9)] - magnitudes[int(n*0.1)];
     
     bool instantaneous_state = metric > ACCEL_THRESHOLD;
@@ -53,6 +54,7 @@ static void on_got_buffer(void* arg, esp_event_base_t event_base, int32_t event_
         active_state_cnt++;
     }
 
+    // conservatism of AD as queue of most recent states
     past_states.push(instantaneous_state);
     
     if (past_states.size() > INERTIA){
@@ -62,7 +64,7 @@ static void on_got_buffer(void* arg, esp_event_base_t event_base, int32_t event_
         past_states.pop();
     
         machine_state new_state = active_state_cnt > BUFFERS_THRESHOLD ? machine_state::active : machine_state::inactive;
-
+        // initiate sending upon status update or timeout
         if (new_state != state || esp_timer_get_time() - last_update_time > UPDATE_INTERVAL){
             state = new_state;
             
