@@ -19,8 +19,13 @@ Term 'sensor-node' encapsulates both software and hardware parts.
 
 Note that sensor-node component is **not** written in the object-oriented paradigm, because the latter is not meant for the embedded programming. Reason is that philosophy of OOP and practicalities of hardware are on distant, hence incompatible levels of abstraction. However, we are making use of other more suitable design patterns, that allow us to follow single responsibility principle and separate interfaces.
 
+## Hardware: the PCB
 
-## Architecture
+![pcb 3d view](https://raw.githubusercontent.com/overwasher/sensor-node-hardware/master/3DVIEW_RENDER.png)
+
+We've created a PCB design so that you don't have to design your own. You get more details [here](https://github.com/overwasher/sensor-node-hardware)
+
+## Software Architecture
 Sensor-node software comes as several modules with particular responsibilities:
 - [`Accelerometer`](https://github.com/overwasher/sensor-node/blob/main/main/accelerometer.c): initializes I2C and MPU6050. Upon filling buffer of MPU6050, ESP32 receives interrupt and reads acceletation data
 - [`Activity detection`](https://github.com/overwasher/sensor-node/blob/main/main/activity_detection.c): upon receiving buffer with telemetry, decides whether status of the washing machine has changed, and if it was the case, signals `Overwatcher Communicator` to send corresponding update to the server
@@ -28,13 +33,79 @@ Sensor-node software comes as several modules with particular responsibilities:
 - [`Telemetry`](https://github.com/overwasher/sensor-node/blob/main/main/telemetry.c): upon receiving buffer (in parallel with `Activity detection`), stores buffer to the flash memory. When flash memory becomes almost full, it signals `Overwatcher Communicator` to send raw telemetry.
 - [`Wi-Fi Manager`](https://github.com/overwasher/sensor-node/blob/main/main/wifi_manager.c) initializes wi-fi modules and provides implementation of connecting and disconnecting to the Access Point, which `Overwatcher Communicator` relies on. In general, we want to turn off wi-fi when it is not needed, in order to enter light sleep mode, optimizing power consumption.
 
+## Activity Detection algorithm explained
+
+### Features
+
+* domain-aware (knows about the washing mashine cycles)
+* adjustable
+* results propagate fast (< 3 minutes)
+
+### Data flow
+
+The acceleration data is read at rate of 100 Hz and is accumulated in internal accelerometer FIFO (1024 bytes in size).
+
+The FIFO containts frames - triples of accelerations (x, y, z) encoded as 2-byte signed integers. Note that the size of FIFO (1024) is not divisible by size of frame (2 * 3 = 6). The FIFO can store 170 frames and 4 more bytes, which results in one truncated frame.
+
+When the FIFO becomes full the accelerometer fires an interrupt at ESP32 which reads the FIFO contents into the buffer. Note that at 100 Hz FIFO becomes full aproximately every 1.7 seconds.
+
+Due to weird architecture decisions on accelerometer side one measurement is lost, because interrupt is fired when the new frame cannot fit into the FIFO.
+
+Because of this FIFO-centered hardware architecture, a similar, buffer-based approach is taken to process the data.
+
+Buffer is an atomic unit of processing in the activity detection algorithm. It is similar to the contents of FIFO, but with a few catches:
+
+- The accelerations are scaled to milli-g instead of device-specific scale (1 mg ~= 0.00981 m/s^2)
+- The last truncated frame is not stored there; only the full 170 frames are
+
+### On the vibration physics
+
+We measure the vibration from the washing mashine, but where does it come from and what is it like? The picture below shows a model that can be useful to understand it.
+
+![image](https://user-images.githubusercontent.com/10363282/136657192-1a45c128-8906-4a9e-99a8-c9f786d492b5.png)
+
+The drum of the washing machine (`M` on the diagram) is suspended inside the washing machine to reduce outside vibrations. The suspension can be modelled as pairs of springs and dampers (`k_x`, `k_y`, `b_x`, `b_y`).
+
+Note that in our case the vibrations are still present on the lid, as it linked with the drum.
+
+The core source of the vibrations is an eccentric rotating mass - the clothes (`m`). By rotating they induce harmonic forces that cause the drum to vibrate (harmonically) along x and y.
+
+Precisely these vibrations are measured by the accelerometer, although offset from zero by gravity.
+
+![image](https://user-images.githubusercontent.com/10363282/136657175-e68f2823-3d76-43db-af84-219637be58e2.png)
+
+(all measurements are in milli-g)
+
+### Sensitivity stage
+
+The sensitivity, a first stage of the activity detection, is a decision upon a buffer: was there an activity or not.
+
+Based on the buffer frames, we calculate 170 instantaneous magnitudes. Then the buffer "amplitude" - the difference between max and min magnitude - is computed. If it is above a certain threshold, we conclude that there was movement. If it is below that threshold, we assume there was no movement.
+
+To exclude the influence of noise (outliers), instead of minimum and maximum, we choose 10th and 90th percentiles of the magnitudes.
+
+The threshold of the difference is a parameter of sensitivity stage; currently, it is 20 milli-g (~0.2 m/s^2). Such a choice of parameters yields a good interpretation of whether the accelerometer experienced movement or not.
+
+### Conservatism stage
+
+The сonservatism, a second stage of the activity detection, is needed to account for the following scenarios:
+
+- During the washing cycle, there are pauses when the mode is changed, and water is being poured in and out. So, while the washing machine is absolutely motionless, it is still active, which should be reflected in the reported status.
+- We also need to exclude the occasional movement of the washing machine door (to which the accelerometer is attached to). The users may do this, but it does not mean that the machine is active.
+
+So the decision is based on a history of decisions on buffers. If out of several most recent buffers (50, which is ~1.4 minutes), 20 or more are asserting that the washing machine was active, it is assumed to be indeed active.
+
+Note that this process may yield false-negative (which are bad) and false-positive (not that bad) results. For users, it's preferable not to come when there was a possibility rather than to go and find out that it was in vain, so the algorithm is biased towards positive decisions.
+
+### Reporting
+
+Sensor-node reports to the Overwatcher upon a change of status (trespassing of the threshold of active buffers count) and upon timeout — every 2 minutes, to confirm both status of the washing machine and the operability of the sensor-node itself.
 
 ## How to build & flash
 
 VScode provides a [nice plugin](https://github.com/espressif/vscode-esp-idf-extension) to work with `esp-idf`: so, install it, clone repo, and build project with `Ctrl+E, B`.
-If you have an ESP32 at your disposal, you can flash the project to it as well.
 
-There is no list of hardware specifications yet. When we finalize hardware design files, we will publish them.
+You can flash it to the board built accoring to [these hardware design files](https://github.com/overwasher/sensor-node-hardware). Note though, that the software was not yet adapted for this hardware (for example the model of accelerometer used is different). The plan is to manufacture the first batch of the boards and start to adapt the software to them.
 
 ## How to contribute
 
