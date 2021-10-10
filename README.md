@@ -4,6 +4,24 @@
 
 Sensor-node component gathers accelerometer telemetry of the washing machine, detects changes in its activity, and sends notifications on status updates as well as raw telemetry data to the [Overwatcher](https://github.com/overwasher/overwatcher).
 
+## Table of Contents
+
+- [Development Stack](#development-stack)
+    + [Hardware](#hardware)
+    + [Software](#software)
+- [Hardware: the PCB](#hardware-the-pcb)
+- [How to build & flash](#how-to-build--flash)
+  * [Configuration](#configuration)
+- [Software Architecture](#software-architecture)
+- [Activity Detection algorithm explained](#activity-detection-algorithm-explained)
+  * [Features](#features)
+  * [Data flow](#data-flow)
+  * [On the vibration physics](#on-the-vibration-physics)
+  * [Sensitivity stage](#sensitivity-stage)
+  * [Conservatism stage](#conservatism-stage)
+  * [Reporting](#reporting)
+- [How to contribute](#how-to-contribute)
+
 ## Development Stack
 Term 'sensor-node' encapsulates both software and hardware parts.
 
