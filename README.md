@@ -36,7 +36,7 @@ You can flash it to the board built accoring to [these hardware design files](ht
 There are two places you might need to configure:
 
 - `credentials.h` file in `main` directory
-- Kconfig
+- [Kconfig](https://www.kernel.org/doc/html/latest/kbuild/kconfig-language.html)
 
 `credentials.h` file contains secrects like sensor node token (used to authorize at overwatcher) and wifi SSID and password. There is `credentials.example.h` you might use as a starting point.
 
