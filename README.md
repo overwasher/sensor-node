@@ -31,6 +31,17 @@ VScode provides a [nice plugin](https://github.com/espressif/vscode-esp-idf-exte
 
 You can flash it to the board built accoring to [these hardware design files](https://github.com/overwasher/sensor-node-hardware). Note though, that the software was not yet adapted for this hardware (for example the model of accelerometer used is different). The plan is to manufacture the first batch of the boards and start to adapt the software to them.
 
+### Configuration
+
+There are two places you might need to configure:
+
+- `credentials.h` file in `main` directory
+- Kconfig
+
+`credentials.h` file contains secrects like sensor node token (used to authorize at overwatcher) and wifi SSID and password. There is `credentials.example.h` you might use as a starting point.
+
+Kconfig options include stuff like GPIO numbers, activity detection parameters, telemetry settings and more. You can access them with command `idf.py menuconfig`, which will modify `sdkconfig` file.
+
 ## Software Architecture
 
 Sensor-node software comes as several interacting modules:
