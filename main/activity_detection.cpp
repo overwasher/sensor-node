@@ -33,21 +33,29 @@ static volatile machine_state state = machine_state::unknown;
 static int active_state_cnt = 0;
 static std::queue<bool> past_states;
 
+static int compute_1d_metric(accel_buffer_dto_t& buffer_dto, int16_t mpu6050_frame_t::* channel) {
+
+    auto n = buffer_dto.buffer_count;
+    // combine accelerations along 3 different axes
+    uint16_t magnitudes[n];
+    for (int i = 0; i < n; i++)
+        magnitudes[i] = buffer_dto.buffer[i].*channel;
+    std::sort(magnitudes, magnitudes + n);
+
+    // calculate difference between 10th and 90th percentile
+    return magnitudes[int(n*0.9)] - magnitudes[int(n*0.1)];;
+}
+
+static int compute_metric(accel_buffer_dto_t& buffer_dto) {
+    return compute_1d_metric(buffer_dto, &mpu6050_frame_t::x)
+        + compute_1d_metric(buffer_dto, &mpu6050_frame_t::y);
+        //+ compute_1d_metric(buffer_dto, &mpu6050_frame_t::z);
+}
+
 static void on_got_buffer(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data){
     accel_buffer_dto_t* typed_event_data = (accel_buffer_dto_t*) event_data;
-    
-    int n = typed_event_data->buffer_count;
-    // combine accelerations along 3 different axes
-    int magnitudes[n];
-    for (int i=0; i < n; i++){
-        magnitudes[i] = sqrt(typed_event_data->buffer[i].x * typed_event_data->buffer[i].x +
-            typed_event_data->buffer[i].y * typed_event_data->buffer[i].y + 
-            typed_event_data->buffer[i].z * typed_event_data->buffer[i].z);
-    }
 
-    std::sort(magnitudes, magnitudes + n);
-    // calculate difference between 10th and 90th percentile
-    int metric = magnitudes[int(n*0.9)] - magnitudes[int(n*0.1)];
+    int metric = compute_metric(*typed_event_data);
     
     bool instantaneous_state = metric > ACCEL_THRESHOLD;
     if (instantaneous_state){
