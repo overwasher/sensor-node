@@ -8,6 +8,7 @@
 #include <sys/time.h>
 #include <string.h>
 #include <memory>
+#include <string>
 
 #include "overwatcher_communicator.h"
 #include "credentials.h"
@@ -20,7 +21,8 @@ extern const char overwatcher_ow_dcnick3_me_pem_end[]   asm("_binary_overwatcher
 
 static const char* TAG = "comm";
 
-static esp_err_t _http_event_handle(esp_http_client_event_t *evt)
+namespace {
+esp_err_t _http_event_handle(esp_http_client_event_t *evt)
 {
 	switch(evt->event_id) {
 		case HTTP_EVENT_ERROR:
@@ -60,7 +62,6 @@ struct esp_http_client_deleter {
 
 using esp_http_client_holder = std::unique_ptr<struct esp_http_client, esp_http_client_deleter>;
 
-
 class esp_http_client_wrap : public esp_http_client_holder
 {
 private:
@@ -88,6 +89,10 @@ public:
 
 	void set_post_data(const char* data, std::size_t size) {
     ESP_ERROR_CHECK(esp_http_client_set_post_field(get(), data, size));
+	}
+
+	void set_post_data(std::string s) {
+		set_post_data(s.c_str(), s.size());
 	}
 
 	void set_content_type(const char* content_type) {
@@ -137,6 +142,63 @@ public:
 	}
 };
 
+class json_dict_builder {
+	std::string buffer = "{";
+
+	void append_escaped_string(const char* data, size_t size) {
+		buffer += '"';
+
+		for (int i = 0; i < size; i++) {
+			if (data[i] == '"')
+				buffer += "\\\"";
+			else
+				buffer += data[i];
+		}
+
+		buffer += '"';
+	}
+
+public:
+	template<std::size_t S>
+	inline void append_hex_string_value(const char* key, const uint8_t (&value)[S]) {
+		append_escaped_string(key, strlen(key));
+		buffer += ':';
+		buffer += '"';
+		for (int i = 0; i < S; i++) {
+			buffer += ("0123456789abcdef")[(value[i] >> 8) & 0xf];
+			buffer += ("0123456789abcdef")[(value[i] >> 0) & 0xf];
+		}
+		buffer += '"';
+		buffer += ',';
+	}
+
+	template<std::size_t S>
+	inline void append_string_value(const char* key, const char (&value)[S]) {
+		append_escaped_string(key, strlen(key));
+		buffer += ':';
+		append_escaped_string(value, S);
+		buffer += ',';
+	}
+	
+	void append_string_value(const char* key, const char* value) {
+		append_escaped_string(key, strlen(key));
+		buffer += ':';
+		append_escaped_string(value, strlen(value));
+		buffer += ',';
+	}
+
+	std::string finalize() {
+		if (buffer.size() <= 1)
+			return "{}";
+
+		auto res = buffer;
+		res[res.size() - 1] = '}';
+		return res;
+	}
+};
+
+}
+
 void send_status(bool status){
 	communication_holder comm;
 	if (!comm){
@@ -146,15 +208,16 @@ void send_status(bool status){
 
 	esp_http_client_wrap client(HTTP_METHOD_POST, BASEURL "sensor/v1/update");
 
-    char json_status[30];
-    sniprintf(json_status, sizeof(json_status), "{\"state\":\"%s\"}", status?"active":"inactive");
+	json_dict_builder builder;
+	builder.append_string_value("state", status ? "active" : "inactive");
 
-	client.set_post_data(json_status, strlen(json_status));
+	auto json_status = builder.finalize();
+	client.set_post_data(json_status);
 
 	esp_err_t err = client.perform();
 
 	if (err == ESP_OK) {
-		ESP_LOGI(TAG, "sent %s", json_status);
+		ESP_LOGI(TAG, "sent %s", json_status.c_str());
 		ESP_LOGI(TAG, "Status = %d", client.status_code());
 	}
 	else{
@@ -176,7 +239,6 @@ static telemetry_parcel_header_t fill_parcel_header(void){
 	struct timeval tv;
 	gettimeofday(&tv, NULL);
 
-	const esp_app_desc_t* app_desc = esp_ota_get_app_description();
 	telemetry_parcel_header_t telemetry_parcel_header;
 	telemetry_parcel_header.magic = 0x4c54574f;
 	telemetry_parcel_header.version = 2;
@@ -250,6 +312,43 @@ void send_telemetry(const uint8_t* data, size_t size, size_t head, size_t tail){
 		ESP_LOGI(TAG, "%s", output_buffer);
 	} else {
 		ESP_LOGE(TAG, "Failed to read response");
+	}
+
+}
+
+void send_version_telemetry() {
+	communication_holder comm;
+	if (!comm){
+		ESP_LOGE(TAG, "could not start communication, therefore did not send version telemetry");
+		return;
+	}
+
+	esp_http_client_wrap client(HTTP_METHOD_POST, BASEURL "sensor/v1/version_telemetry");
+
+	json_dict_builder builder;
+	
+	const esp_app_desc_t* d = esp_ota_get_app_description();
+	builder.append_string_value("app_version", d->version);
+	builder.append_string_value("compile_time", d->version);
+	builder.append_string_value("compile_date", d->version);
+	builder.append_string_value("idf_version", d->version);
+	builder.append_hex_string_value("app_elf_sha256", d->app_elf_sha256);
+
+	uint8_t mac_addr[6] = {0};
+	esp_read_mac(mac_addr, ESP_MAC_WIFI_STA);
+	builder.append_hex_string_value("mac", mac_addr);
+
+	auto json_version_telemetry = builder.finalize();
+	client.set_post_data(json_version_telemetry);
+
+	esp_err_t err = client.perform();
+
+	if (err == ESP_OK) {
+		ESP_LOGI(TAG, "sent %s", json_version_telemetry.c_str());
+		ESP_LOGI(TAG, "Status = %d", client.status_code());
+	}
+	else{
+		ESP_LOGE(TAG, "client_perform() failed -> did not send version telemetry");
 	}
 
 }
