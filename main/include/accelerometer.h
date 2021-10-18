@@ -1,6 +1,10 @@
 #pragma once
 #include "esp_event.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 extern esp_event_loop_handle_t accel_event_loop;
 
 typedef struct{
@@ -16,3 +20,8 @@ typedef struct{
 
 
 void accelerometer_init(void);
+
+
+#ifdef __cplusplus
+}
+#endif

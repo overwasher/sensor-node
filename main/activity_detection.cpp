@@ -4,14 +4,12 @@
 #include <queue>
 #include <algorithm>
 
-extern "C" {
 #include "ow_events.h"
 #include "esp_err.h"
 #include "activity_detection.h"
 #include "accelerometer.h"
 #include "overwatcher_communicator.h"
 #include "esp_timer.h"
-}
 
 static const char* TAG = "ad";
 
