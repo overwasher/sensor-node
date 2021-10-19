@@ -1,3 +1,14 @@
-idf_component_register(SRCS "activity_detection.cpp" "telemetry.c" "overwatcher_communicator.cpp" "ow_events.c" "main.c" "wifi_manager.c" "accelerometer.c"
-                    INCLUDE_DIRS "include"
-                    EMBED_TXTFILES overwatcher-ow-dcnick3-me.pem)
+idf_component_register(
+  SRCS 
+    "accel_telemetry.c"
+    "accelerometer.c"
+    "activity_detection.cpp"
+    "overwatcher_communicator.cpp"
+    "ow_events.c"
+    "main.c"
+    "wifi_manager.c"
+  INCLUDE_DIRS 
+    "include"
+  EMBED_TXTFILES 
+    overwatcher-ow-dcnick3-me.pem
+)

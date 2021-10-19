@@ -7,7 +7,7 @@
 #include "esp_spi_flash.h"
 #include "string.h"
 
-#include "telemetry.h"
+#include "accel_telemetry.h"
 #include "accelerometer.h"
 #include "ow_events.h"
 #include "overwatcher_communicator.h"

@@ -21,7 +21,7 @@
 #include "accelerometer.h"
 #include "activity_detection.h"
 #include "overwatcher_communicator.h"
-#include "telemetry.h"
+#include "accel_telemetry.h"
 
 
 static const char* TAG = "main";
