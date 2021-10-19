@@ -148,7 +148,9 @@ class json_dict_builder {
 	void append_escaped_string(const char* data, size_t size) {
 		buffer += '"';
 
-		for (int i = 0; i < size; i++) {
+		for (int i = 0; i < size || size == 0; i++) {
+			if (data[i] == 0)
+				break;
 			if (data[i] == '"')
 				buffer += "\\\"";
 			else
@@ -174,16 +176,16 @@ public:
 
 	template<std::size_t S>
 	inline void append_string_value(const char* key, const char (&value)[S]) {
-		append_escaped_string(key, strlen(key));
+		append_escaped_string(key, 0);
 		buffer += ':';
 		append_escaped_string(value, S);
 		buffer += ',';
 	}
 	
 	void append_string_value(const char* key, const char* value) {
-		append_escaped_string(key, strlen(key));
+		append_escaped_string(key, 0);
 		buffer += ':';
-		append_escaped_string(value, strlen(value));
+		append_escaped_string(value, 0);
 		buffer += ',';
 	}
 
